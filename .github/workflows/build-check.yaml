@@ -1,0 +1,15 @@
+name: Build & Check
+on: [pull_request]
+jobs:
+  check:
+    name: Run Gradle checks
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: '16'
+      - name: Run checks
+        run: ./gradlew clean check --rerun-tasks
