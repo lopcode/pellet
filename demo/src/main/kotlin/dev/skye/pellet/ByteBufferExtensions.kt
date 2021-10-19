@@ -41,6 +41,7 @@ fun ByteBuffer.nextPositionOfOrNull(needle: Byte): Int? {
     return null
 }
 
+// Advances a ByteBuffer position by count, up to and including the current limit
 fun ByteBuffer.advance(count: Int): ByteBuffer {
     val newPosition = this.position() + count
     return if (newPosition > this.limit()) {

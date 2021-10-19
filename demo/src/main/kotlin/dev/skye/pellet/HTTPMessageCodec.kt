@@ -11,6 +11,9 @@ class HTTPMessageCodec {
     private var expectedEntityOctets: Int = -1
     private var readEntityOctets: Int = -1
     private val entityBuffer = ByteBuffer.allocate(1024 * 16)
+    private val chunkLineBuffer = ByteBuffer.allocate(256)
+    private var expectedChunkSizeOctets: Int = -1
+    private var readChunkSizeOctets: Int = -1
     private var entity: HTTPEntity? = null
 
     private var chunkState = ChunkConsumeState.SIZE_LINE
@@ -27,7 +30,8 @@ class HTTPMessageCodec {
 
     private enum class ChunkConsumeState {
         SIZE_LINE,
-        DATA_LINE
+        DATA_LINE,
+        END_LINE
     }
 
     private var state = ConsumeState.REQUEST_LINE
@@ -42,110 +46,209 @@ class HTTPMessageCodec {
                         continue@readLoop
                     }
 
-                    val requestLineString = requestLineBuffer.stringifyAndClear(Charsets.US_ASCII)
-                    val parsedRequestLine = parseRequestLine(requestLineString).getOrThrow()
-                    logger.debug("got request line: $parsedRequestLine")
-                    this.requestLine = parsedRequestLine
-                    state = ConsumeState.HEADERS
+                    handleRequestLine()
                 }
                 ConsumeState.HEADERS -> {
                     if (!consumeLine(bytes, headersBuffer)) {
                         continue@readLoop
                     }
 
-                    val headerLine = headersBuffer.stringifyAndClear(Charsets.US_ASCII)
-                    when {
-                        headerLine.isNotEmpty() -> {
-                            val parsedHeader = parseHeaderLine(headerLine).getOrNull()
-                            if (parsedHeader != null) {
-                                headers.add(parsedHeader)
-                            }
-                        }
-                        else -> {
-                            logger.debug("got headers: $headers")
-
-                            val transferEncoding = headers.getSingleOrNull(HTTPHeaderConstants.transferEncoding)
-                            val isChunked = transferEncoding?.rawValue?.equals(HTTPHeaderConstants.chunked) ?: false
-                            val contentLength = headers.getSingleOrNull(HTTPHeaderConstants.contentLength)?.rawValue
-
-                            val requestLine = this.requestLine ?: throw RuntimeException("no request line available")
-                            state = when {
-                                requestLine.method == "HEAD" -> {
-                                    messages.add(buildMessage())
-                                    ConsumeState.REQUEST_LINE
-                                }
-                                isChunked -> {
-                                    chunkState = ChunkConsumeState.SIZE_LINE
-                                    ConsumeState.CHUNKED_ENTITY
-                                }
-                                contentLength != null -> {
-                                    this.expectedEntityOctets = contentLength.toIntOrNull()
-                                        ?: throw RuntimeException("failed to parse content length")
-                                    if (this.expectedEntityOctets < 0 || this.expectedEntityOctets > entityBuffer.capacity()) {
-                                        throw RuntimeException("bad content length")
-                                    }
-
-                                    if (expectedEntityOctets == 0) {
-                                        this.entity = HTTPEntity.NoContent
-                                        messages.add(buildMessage())
-                                        state = ConsumeState.REQUEST_LINE
-                                        continue@readLoop
-                                    }
-
-                                    this.readEntityOctets = 0
-                                    ConsumeState.FIXED_ENTITY
-                                }
-                                else -> {
-                                    messages.add(buildMessage())
-                                    ConsumeState.REQUEST_LINE
-                                }
-                            }
-                            logger.debug("state after headers: $state")
-                        }
-                    }
+                    handleHeaderLine(messages)
                 }
                 ConsumeState.FIXED_ENTITY -> {
-                    if (readEntityOctets < expectedEntityOctets) {
-                        val remainingOctets = expectedEntityOctets - readEntityOctets
-                        val availableOctets = min(bytes.remaining(), remainingOctets)
-                        entityBuffer.put(readEntityOctets, bytes, bytes.position(), availableOctets)
-                        readEntityOctets += availableOctets
-                        entityBuffer.position(readEntityOctets)
-                        bytes.advance(availableOctets)
-                    }
-
-                    if (readEntityOctets < expectedEntityOctets) {
+                    if (!consumeFixedEntity(bytes, entityBuffer)) {
                         continue@readLoop
                     }
 
-                    entityBuffer.flip()
-                    entity = HTTPEntity.Content(
-                        buffer = ByteBuffer
-                            .allocate(expectedEntityOctets)
-                            .put(entityBuffer)
-                            .flip()
-                            .asReadOnlyBuffer()
-                    )
-                    entityBuffer.clear()
-                    expectedEntityOctets = -1
-                    readEntityOctets = -1
-                    messages.add(buildMessage())
-                    state = ConsumeState.REQUEST_LINE
+                    handleFixedEntity(messages)
                 }
                 ConsumeState.CHUNKED_ENTITY -> {
-                    throw RuntimeException("chunked transfer encoding not supported yet")
+                    when (chunkState) {
+                        ChunkConsumeState.SIZE_LINE -> {
+                            if (!consumeLine(bytes, chunkLineBuffer)) {
+                                continue@readLoop
+                            }
 
-                    // <hex size><CRLF>
-                    // <data><CRLF>
-                    // <hex size><CRLF>
-                    // <data><CRLF>
-                    // 0<CRLF>
-                    // CRLF
+                            handleChunkSizeLine()
+                        }
+                        ChunkConsumeState.DATA_LINE -> {
+                            if (!consumeDataChunk(bytes, entityBuffer)) {
+                                continue@readLoop
+                            }
+
+                            logger.info("read data chunk line")
+                            chunkState = ChunkConsumeState.SIZE_LINE
+                        }
+                        ChunkConsumeState.END_LINE -> {
+                            if (!consumeLine(bytes, chunkLineBuffer)) {
+                                continue@readLoop
+                            }
+
+                            val endLine = chunkLineBuffer.stringifyAndClear(Charsets.US_ASCII)
+                            assert(endLine.isEmpty())
+
+                            logger.info("read chunk end line")
+                            handleChunkedEntity(messages)
+                        }
+                    }
                 }
             }
         }
 
         return messages
+    }
+
+    private fun handleChunkSizeLine() {
+        val expectedChunkSizeOctets = chunkLineBuffer
+            .stringifyAndClear(Charsets.US_ASCII)
+            .toInt(radix = 16)
+        assert(expectedChunkSizeOctets >= 0)
+        assert((expectedChunkSizeOctets + readChunkSizeOctets) < entityBuffer.capacity())
+        when (expectedChunkSizeOctets) {
+            0 -> {
+                logger.info("read last chunk size line")
+                chunkState = ChunkConsumeState.END_LINE
+            }
+            else -> {
+                this.expectedChunkSizeOctets = expectedChunkSizeOctets
+                this.readChunkSizeOctets = 0
+                chunkState = ChunkConsumeState.DATA_LINE
+                logger.info("read size chunk line")
+            }
+        }
+        chunkLineBuffer.clear()
+    }
+
+    private fun consumeFixedEntity(source: ByteBuffer, target: ByteBuffer): Boolean {
+        if (readEntityOctets < expectedEntityOctets) {
+            val remainingOctets = expectedEntityOctets - readEntityOctets
+            val availableOctets = min(source.remaining(), remainingOctets)
+            target.put(readEntityOctets, source, source.position(), availableOctets)
+            readEntityOctets += availableOctets
+            target.position(readEntityOctets)
+            source.advance(availableOctets)
+        }
+
+        if (readEntityOctets < expectedEntityOctets) {
+            return false
+        }
+
+        return true
+    }
+
+    private fun consumeDataChunk(source: ByteBuffer, target: ByteBuffer): Boolean {
+        val expectedSizeWithTrailingCRLF = expectedChunkSizeOctets + 2
+        if (readChunkSizeOctets < expectedSizeWithTrailingCRLF) {
+            val remainingOctets = expectedSizeWithTrailingCRLF - readChunkSizeOctets
+            val availableOctets = min(source.remaining(), remainingOctets)
+            target.put(readChunkSizeOctets, source, source.position(), availableOctets)
+            readChunkSizeOctets += availableOctets
+            target.position(readChunkSizeOctets)
+            source.advance(availableOctets)
+        }
+
+        if (readChunkSizeOctets < expectedSizeWithTrailingCRLF) {
+            return false
+        }
+
+        target.trimTrailing(HTTPCharacters.LINE_FEED_BYTE)
+        target.trimTrailing(HTTPCharacters.CARRIAGE_RETURN_BYTE)
+        return true
+    }
+
+    private fun handleFixedEntity(messages: MutableList<HTTPRequestMessage>) {
+        entityBuffer.flip()
+        entity = HTTPEntity.Content(
+            buffer = ByteBuffer
+                .allocate(expectedEntityOctets)
+                .put(entityBuffer)
+                .flip()
+                .asReadOnlyBuffer()
+        )
+        entityBuffer.clear()
+        expectedEntityOctets = -1
+        readEntityOctets = -1
+        messages.add(buildMessage())
+        state = ConsumeState.REQUEST_LINE
+    }
+
+    private fun handleChunkedEntity(messages: MutableList<HTTPRequestMessage>) {
+        entityBuffer.flip()
+        entity = HTTPEntity.Content(
+            buffer = ByteBuffer
+                .allocate(entityBuffer.limit())
+                .put(entityBuffer)
+                .flip()
+                .asReadOnlyBuffer()
+        )
+        entityBuffer.clear()
+        expectedChunkSizeOctets = -1
+        readChunkSizeOctets = -1
+        messages.add(buildMessage())
+        state = ConsumeState.REQUEST_LINE
+    }
+
+    private fun handleRequestLine() {
+        val requestLineString = requestLineBuffer.stringifyAndClear(Charsets.US_ASCII)
+        val parsedRequestLine = parseRequestLine(requestLineString).getOrThrow()
+        logger.debug("got request line: $parsedRequestLine")
+        this.requestLine = parsedRequestLine
+        state = ConsumeState.HEADERS
+    }
+
+    private fun handleHeaderLine(messages: MutableList<HTTPRequestMessage>) {
+        val headerLine = headersBuffer.stringifyAndClear(Charsets.US_ASCII)
+        when {
+            headerLine.isNotEmpty() -> {
+                val parsedHeader = parseHeaderLine(headerLine).getOrNull()
+                if (parsedHeader != null) {
+                    headers.add(parsedHeader)
+                }
+            }
+            else -> handleEndOfHeaders(messages)
+        }
+    }
+
+    private fun handleEndOfHeaders(messages: MutableList<HTTPRequestMessage>) {
+        logger.debug("got headers: $headers")
+
+        val transferEncoding = headers.getSingleOrNull(HTTPHeaderConstants.transferEncoding)
+        val isChunked = transferEncoding?.rawValue?.equals(HTTPHeaderConstants.chunked) ?: false
+        val contentLength = headers.getSingleOrNull(HTTPHeaderConstants.contentLength)?.rawValue
+
+        val requestLine = this.requestLine ?: throw RuntimeException("no request line available")
+        state = when {
+            requestLine.method == "HEAD" -> {
+                messages.add(buildMessage())
+                ConsumeState.REQUEST_LINE
+            }
+            isChunked -> {
+                chunkState = ChunkConsumeState.SIZE_LINE
+                ConsumeState.CHUNKED_ENTITY
+            }
+            contentLength != null -> {
+                this.expectedEntityOctets = contentLength.toIntOrNull()
+                    ?: throw RuntimeException("failed to parse content length")
+                if (this.expectedEntityOctets < 0 || this.expectedEntityOctets > entityBuffer.capacity()) {
+                    throw RuntimeException("bad content length")
+                }
+
+                if (expectedEntityOctets == 0) {
+                    this.entity = HTTPEntity.NoContent
+                    messages.add(buildMessage())
+                    state = ConsumeState.REQUEST_LINE
+                    return
+                }
+
+                this.readEntityOctets = 0
+                ConsumeState.FIXED_ENTITY
+            }
+            else -> {
+                messages.add(buildMessage())
+                ConsumeState.REQUEST_LINE
+            }
+        }
+        logger.debug("state after headers: $state")
     }
 
     // Copies bytes from the source to the target buffer until LF is found
