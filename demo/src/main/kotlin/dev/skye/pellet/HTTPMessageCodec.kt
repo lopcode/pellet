@@ -1,17 +1,20 @@
 package dev.skye.pellet
 
+import kotlinx.coroutines.channels.Channel
 import java.nio.ByteBuffer
 import kotlin.math.min
 
-class HTTPMessageCodec {
+class HTTPMessageCodec(
+    private val channel: Channel<HTTPRequestMessage>
+) {
 
-    private val requestLineBuffer = ByteBuffer.allocate(4096)
-    private val headersBuffer = ByteBuffer.allocate(4096)
+    private val requestLineBuffer = ByteBuffer.allocateDirect(4096)
+    private val headersBuffer = ByteBuffer.allocateDirect(4096)
 
     private var expectedEntityOctets: Int = -1
     private var readEntityOctets: Int = -1
-    private val entityBuffer = ByteBuffer.allocate(1024 * 16)
-    private val chunkLineBuffer = ByteBuffer.allocate(256)
+    private val entityBuffer = ByteBuffer.allocateDirect(1024 * 16)
+    private val chunkLineBuffer = ByteBuffer.allocateDirect(256)
     private var expectedChunkSizeOctets: Int = -1
     private var readChunkSizeOctets: Int = -1
     private var entity: HTTPEntity? = null
@@ -37,8 +40,23 @@ class HTTPMessageCodec {
     private var state = ConsumeState.REQUEST_LINE
     private val logger = logger<HTTPMessageCodec>()
 
-    fun consume(bytes: ByteBuffer): List<HTTPRequestMessage> {
-        val messages = mutableListOf<HTTPRequestMessage>()
+    fun clear() {
+        requestLineBuffer.clear()
+        headersBuffer.clear()
+        entityBuffer.clear()
+        chunkLineBuffer.clear()
+        expectedChunkSizeOctets = -1
+        readChunkSizeOctets = -1
+        expectedEntityOctets = -1
+        readEntityOctets = -1
+        state = ConsumeState.REQUEST_LINE
+        chunkState = ChunkConsumeState.SIZE_LINE
+        requestLine = null
+        entity = null
+        headers = HTTPHeaders()
+    }
+
+    suspend fun consume(bytes: ByteBuffer) {
         readLoop@ while (bytes.hasRemaining()) {
             when (state) {
                 ConsumeState.REQUEST_LINE -> {
@@ -53,14 +71,18 @@ class HTTPMessageCodec {
                         continue@readLoop
                     }
 
-                    handleHeaderLine(messages)
+                    handleHeaderLine()
+                    if (state == ConsumeState.REQUEST_LINE) {
+                        channel.send(buildMessage())
+                    }
                 }
                 ConsumeState.FIXED_ENTITY -> {
                     if (!consumeFixedEntity(bytes, entityBuffer)) {
                         continue@readLoop
                     }
 
-                    handleFixedEntity(messages)
+                    handleFixedEntity()
+                    channel.send(buildMessage())
                 }
                 ConsumeState.CHUNKED_ENTITY -> {
                     when (chunkState) {
@@ -88,14 +110,13 @@ class HTTPMessageCodec {
                             assert(endLine.isEmpty())
 
                             logger.info("read chunk end line")
-                            handleChunkedEntity(messages)
+                            handleChunkedEntity()
+                            channel.send(buildMessage())
                         }
                     }
                 }
             }
         }
-
-        return messages
     }
 
     private fun handleChunkSizeLine() {
@@ -156,7 +177,7 @@ class HTTPMessageCodec {
         return true
     }
 
-    private fun handleFixedEntity(messages: MutableList<HTTPRequestMessage>) {
+    private fun handleFixedEntity() {
         entityBuffer.flip()
         entity = HTTPEntity.Content(
             buffer = ByteBuffer
@@ -168,11 +189,10 @@ class HTTPMessageCodec {
         entityBuffer.clear()
         expectedEntityOctets = -1
         readEntityOctets = -1
-        messages.add(buildMessage())
         state = ConsumeState.REQUEST_LINE
     }
 
-    private fun handleChunkedEntity(messages: MutableList<HTTPRequestMessage>) {
+    private fun handleChunkedEntity() {
         entityBuffer.flip()
         entity = HTTPEntity.Content(
             buffer = ByteBuffer
@@ -184,7 +204,6 @@ class HTTPMessageCodec {
         entityBuffer.clear()
         expectedChunkSizeOctets = -1
         readChunkSizeOctets = -1
-        messages.add(buildMessage())
         state = ConsumeState.REQUEST_LINE
     }
 
@@ -196,7 +215,7 @@ class HTTPMessageCodec {
         state = ConsumeState.HEADERS
     }
 
-    private fun handleHeaderLine(messages: MutableList<HTTPRequestMessage>) {
+    private fun handleHeaderLine() {
         val headerLine = headersBuffer.stringifyAndClear(Charsets.US_ASCII)
         when {
             headerLine.isNotEmpty() -> {
@@ -205,11 +224,11 @@ class HTTPMessageCodec {
                     headers.add(parsedHeader)
                 }
             }
-            else -> handleEndOfHeaders(messages)
+            else -> handleEndOfHeaders()
         }
     }
 
-    private fun handleEndOfHeaders(messages: MutableList<HTTPRequestMessage>) {
+    private fun handleEndOfHeaders() {
         logger.debug("got headers: $headers")
 
         val transferEncoding = headers.getSingleOrNull(HTTPHeaderConstants.transferEncoding)
@@ -219,7 +238,6 @@ class HTTPMessageCodec {
         val requestLine = this.requestLine ?: throw RuntimeException("no request line available")
         state = when {
             requestLine.method == "HEAD" -> {
-                messages.add(buildMessage())
                 ConsumeState.REQUEST_LINE
             }
             isChunked -> {
@@ -235,7 +253,6 @@ class HTTPMessageCodec {
 
                 if (expectedEntityOctets == 0) {
                     this.entity = HTTPEntity.NoContent
-                    messages.add(buildMessage())
                     state = ConsumeState.REQUEST_LINE
                     return
                 }
@@ -244,7 +261,6 @@ class HTTPMessageCodec {
                 ConsumeState.FIXED_ENTITY
             }
             else -> {
-                messages.add(buildMessage())
                 ConsumeState.REQUEST_LINE
             }
         }
@@ -292,7 +308,7 @@ class HTTPMessageCodec {
             entity = entity
         )
 
-        headers = HTTPHeaders()
+        clear()
         return message
     }
 

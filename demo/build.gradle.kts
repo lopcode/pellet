@@ -11,6 +11,9 @@ repositories {
 dependencies {
     implementation(project(":lib"))
     implementation("org.slf4j:slf4j-simple:1.7.32")
+
+    implementation("io.ktor:ktor-server-core:1.6.4")
+    implementation("io.ktor:ktor-server-netty:1.6.4")
 }
 
 application {
