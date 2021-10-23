@@ -18,12 +18,13 @@ fun ByteBuffer.trimTrailing(byte: Byte): ByteBuffer {
 
 fun ByteBuffer.stringifyAndClear(charset: Charset = Charsets.US_ASCII): String {
     assert(this.position() == 0)
-    val string = String(
-        this.array(),
-        0,
-        this.limit(),
-        charset
-    )
+    val string = if (this.hasArray()) {
+        String(this.array(), 0, this.limit(), charset)
+    } else {
+        val byteArray = ByteArray(this.limit())
+        this.get(byteArray, 0, this.limit())
+        String(byteArray, 0, this.limit(), charset)
+    }
     this.clear()
     return string
 }
