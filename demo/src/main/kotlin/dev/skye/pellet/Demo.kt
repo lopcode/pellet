@@ -1,12 +1,8 @@
 package dev.skye.pellet
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.IOException
 import java.net.InetSocketAddress
@@ -22,8 +18,15 @@ import kotlin.math.max
 object Demo
 
 val logger = logger<Demo>()
-data class PelletClient(
-    val codec: HTTPMessageCodec
+class PelletClient(
+    val socket: SocketChannel
+) {
+    lateinit var codec: HTTPMessageCodec
+}
+
+data class PelletRequest(
+    val message: HTTPRequestMessage,
+    val client: PelletClient
 )
 
 fun main() = runBlocking {
@@ -35,14 +38,19 @@ fun main() = runBlocking {
     serverSocketChannel.register(acceptSelector, SelectionKey.OP_ACCEPT)
 
     val numberOfReaders = max(1, Runtime.getRuntime().availableProcessors())
-    val requestChannel = Channel<HTTPRequestMessage>(numberOfReaders)
+
+    val context = SupervisorJob()
+    val scope = object : CoroutineScope {
+        override val coroutineContext: CoroutineContext
+            get() = Dispatchers.Default + context
+    }
 
     val readSelectors = (0 until numberOfReaders).map {
         Selector.open()
     }
 
     val acceptThread = thread(start = true) {
-        acceptLoop(acceptSelector, readSelectors, requestChannel, serverSocketChannel)
+        acceptLoop(acceptSelector, readSelectors, scope, serverSocketChannel)
     }
 
     val readThreads = readSelectors.map { selector ->
@@ -51,22 +59,6 @@ fun main() = runBlocking {
         }
     }
 
-    val context = SupervisorJob()
-    val scope = object : CoroutineScope {
-        override val coroutineContext: CoroutineContext
-            get() = Dispatchers.Default + context
-    }
-
-    val messageProcessors = (0..numberOfReaders).map {
-        scope.launch(start = CoroutineStart.LAZY) {
-            while (isActive) {
-                val message = requestChannel.receive()
-                processMessage(message)
-            }
-        }
-    }
-
-    messageProcessors.forEach { it.start() }
     readThreads.forEach { it.join() }
     acceptThread.join()
 }
@@ -74,12 +66,12 @@ fun main() = runBlocking {
 private fun acceptLoop(
     selector: Selector,
     readSelectors: List<Selector>,
-    readChannel: Channel<HTTPRequestMessage>,
+    scope: CoroutineScope,
     serverSocketChannel: ServerSocketChannel
 ) {
     val numberOfReadSelectors = readSelectors.size
     var currentReadSelector = 0
-    while (true) {
+    while (!Thread.currentThread().isInterrupted) {
         val numberSelected = selector.select()
         if (numberSelected <= 0) {
             continue
@@ -99,8 +91,11 @@ private fun acceptLoop(
                     break
                 }
                 socketChannel.configureBlocking(false)
-                val attachment = PelletClient(HTTPMessageCodec(readChannel))
-                socketChannel.register(readSelectors[currentReadSelector], SelectionKey.OP_READ, attachment)
+                // todo: how to track clients - be able to go socket <-> client
+                val client = PelletClient(socketChannel)
+                val output = HTTPMessageCodecOutput(scope, client)
+                client.codec = HTTPMessageCodec(output)
+                socketChannel.register(readSelectors[currentReadSelector], SelectionKey.OP_READ, client)
                 readSelectors[currentReadSelector].wakeup()
                 currentReadSelector++
                 if (currentReadSelector == numberOfReadSelectors) {
@@ -116,10 +111,10 @@ private fun acceptLoop(
 private fun readLoop(
     selector: Selector,
     bufferSize: Int
-) = runBlocking {
+) {
     val buffer = ByteBuffer.allocateDirect(bufferSize)
-    while (true) {
-        val numberSelected = selector.select()
+    while (!Thread.currentThread().isInterrupted) {
+        val numberSelected = selector.select() // todo: await
         if (numberSelected <= 0) {
             continue
         }
@@ -140,7 +135,7 @@ private fun readLoop(
                     continue
                 }
                 val numberBytesRead = try {
-                    socketChannel.read(buffer)
+                    socketChannel.read(buffer) // todo: await
                 } catch (exception: IOException) {
                     logger.warn("failed to read $socketChannel", exception)
                     key.attach(null)
@@ -170,12 +165,8 @@ private fun writeNoContent(socketChannel: SocketChannel) {
     val noContent = "HTTP/1.1 204 No Content\r\n\r\n"
     val bytes = Charsets.US_ASCII.encode(noContent)
     try {
-        socketChannel.write(bytes) // todo: might not write all bytes
+        socketChannel.write(bytes) // todo: await
     } catch (exception: IOException) {
         // ignore
     }
-}
-
-fun processMessage(message: HTTPRequestMessage) {
-    logger.debug("got message: $message")
 }

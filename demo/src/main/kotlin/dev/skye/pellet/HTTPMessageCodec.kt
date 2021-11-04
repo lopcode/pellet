@@ -1,11 +1,31 @@
 package dev.skye.pellet
 
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.nio.ByteBuffer
 import kotlin.math.min
 
+class HTTPMessageCodecOutput(
+    private val scope: CoroutineScope,
+    private val client: PelletClient
+) {
+
+    fun output(message: HTTPRequestMessage) {
+        val request = PelletRequest(message, client)
+        scope.launch {
+            processRequest(request)
+        }
+    }
+
+    suspend fun processRequest(request: PelletRequest) {
+        logger.debug("got request: $request")
+        delay((0L..1000L).random()) // simulate work
+    }
+}
+
 class HTTPMessageCodec(
-    private val channel: Channel<HTTPRequestMessage>
+    private val output: HTTPMessageCodecOutput
 ) {
 
     private val requestLineBuffer = ByteBuffer.allocateDirect(4096)
@@ -56,7 +76,7 @@ class HTTPMessageCodec(
         headers = HTTPHeaders()
     }
 
-    suspend fun consume(bytes: ByteBuffer) {
+    fun consume(bytes: ByteBuffer) {
         readLoop@ while (bytes.hasRemaining()) {
             when (state) {
                 ConsumeState.REQUEST_LINE -> {
@@ -73,7 +93,7 @@ class HTTPMessageCodec(
 
                     handleHeaderLine()
                     if (state == ConsumeState.REQUEST_LINE) {
-                        channel.send(buildMessage())
+                        output.output(buildMessage())
                     }
                 }
                 ConsumeState.FIXED_ENTITY -> {
@@ -82,7 +102,7 @@ class HTTPMessageCodec(
                     }
 
                     handleFixedEntity()
-                    channel.send(buildMessage())
+                    output.output(buildMessage())
                 }
                 ConsumeState.CHUNKED_ENTITY -> {
                     when (chunkState) {
@@ -111,7 +131,7 @@ class HTTPMessageCodec(
 
                             logger.info("read chunk end line")
                             handleChunkedEntity()
-                            channel.send(buildMessage())
+                            output.output(buildMessage())
                         }
                     }
                 }
