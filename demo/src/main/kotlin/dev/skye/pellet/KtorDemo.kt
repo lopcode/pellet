@@ -7,13 +7,11 @@ import io.ktor.routing.get
 import io.ktor.routing.routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
-import kotlinx.coroutines.delay
 
 fun main() {
-    embeddedServer(Netty, port = 8082) {
+    embeddedServer(Netty, port = 8083) {
         routing {
             get("/") {
-                delay((0..1000L).random())
                 call.respond(HttpStatusCode.NoContent)
             }
         }
