@@ -1,26 +1,32 @@
 package dev.skye.pellet
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import java.io.IOException
 import java.nio.ByteBuffer
+import java.nio.channels.AsynchronousSocketChannel
 import kotlin.math.min
 
 class HTTPMessageCodecOutput(
-    private val scope: CoroutineScope,
     private val client: PelletClient
 ) {
 
-    fun output(message: HTTPRequestMessage) {
+    suspend fun output(message: HTTPRequestMessage) {
         val request = PelletRequest(message, client)
-        scope.launch {
-            processRequest(request)
-        }
+        processRequest(request)
     }
 
-    suspend fun processRequest(request: PelletRequest) {
+    private suspend fun processRequest(request: PelletRequest) {
         logger.debug("got request: $request")
-        delay((0L..1000L).random()) // simulate work
+        writeNoContent(client.socket)
+    }
+
+    private suspend fun writeNoContent(socketChannel: AsynchronousSocketChannel) {
+        val noContent = "HTTP/1.1 204 No Content\r\n\r\n"
+        val bytes = Charsets.US_ASCII.encode(noContent)
+        try {
+            socketChannel.awaitWrite(bytes)
+        } catch (exception: IOException) {
+            // ignore
+        }
     }
 }
 
@@ -76,7 +82,7 @@ class HTTPMessageCodec(
         headers = HTTPHeaders()
     }
 
-    fun consume(bytes: ByteBuffer) {
+    suspend fun consume(bytes: ByteBuffer) {
         readLoop@ while (bytes.hasRemaining()) {
             when (state) {
                 ConsumeState.REQUEST_LINE -> {
