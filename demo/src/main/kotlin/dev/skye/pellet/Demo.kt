@@ -32,7 +32,6 @@ data class PelletRequest(
     val client: PelletClient
 )
 
-@OptIn(InternalCoroutinesApi::class)
 fun main() = runBlocking {
     val processors = Runtime.getRuntime().availableProcessors().coerceAtLeast(2)
     val group = AsynchronousChannelGroup.withThreadPool(Executors.newFixedThreadPool(2))
@@ -40,6 +39,7 @@ fun main() = runBlocking {
     val serverSocketChannel = unboundSocket.bind(InetSocketAddress("localhost", 8082))
     logger.info("socket opened: $serverSocketChannel")
 
+    @OptIn(InternalCoroutinesApi::class)
     val dispatcher = ExperimentalCoroutineDispatcher().limited(processors)
     val context = SupervisorJob()
     val scope = object : CoroutineScope {
