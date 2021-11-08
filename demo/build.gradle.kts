@@ -1,5 +1,6 @@
 plugins {
     application
+    id("com.github.johnrengelman.shadow") version "7.1.0"
 }
 
 group = "dev.skye.pellet"
@@ -14,6 +15,9 @@ dependencies {
 
     implementation("io.ktor:ktor-server-core:1.6.4")
     implementation("io.ktor:ktor-server-netty:1.6.4")
+
+    implementation("io.jooby:jooby:2.11.0")
+    implementation("io.jooby:jooby-netty:2.11.0")
 }
 
 application {
