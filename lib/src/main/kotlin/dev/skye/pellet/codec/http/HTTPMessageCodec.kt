@@ -1,38 +1,18 @@
-package dev.skye.pellet
+package dev.skye.pellet.codec.http
 
-import java.io.IOException
+import dev.skye.pellet.codec.Codec
+import dev.skye.pellet.extension.advance
+import dev.skye.pellet.extension.nextPositionOfOrNull
+import dev.skye.pellet.extension.stringifyAndClear
+import dev.skye.pellet.extension.trimLWS
+import dev.skye.pellet.extension.trimTrailing
+import dev.skye.pellet.logging.logger
 import java.nio.ByteBuffer
-import java.nio.channels.AsynchronousSocketChannel
 import kotlin.math.min
 
-class HTTPMessageCodecOutput(
-    private val client: PelletClient
-) {
-
-    suspend fun output(message: HTTPRequestMessage) {
-        val request = PelletRequest(message, client)
-        processRequest(request)
-    }
-
-    private suspend fun processRequest(request: PelletRequest) {
-        logger.debug("got request: $request")
-        writeNoContent(client.socket)
-    }
-
-    private suspend fun writeNoContent(socketChannel: AsynchronousSocketChannel) {
-        val noContent = "HTTP/1.1 204 No Content\r\n\r\n"
-        val bytes = Charsets.US_ASCII.encode(noContent)
-        try {
-            socketChannel.awaitWrite(bytes)
-        } catch (exception: IOException) {
-            // ignore
-        }
-    }
-}
-
-class HTTPMessageCodec(
+internal class HTTPMessageCodec(
     private val output: HTTPMessageCodecOutput
-) {
+) : Codec {
 
     private val requestLineBuffer = ByteBuffer.allocateDirect(4096)
     private val headersBuffer = ByteBuffer.allocateDirect(4096)
@@ -66,7 +46,7 @@ class HTTPMessageCodec(
     private var state = ConsumeState.REQUEST_LINE
     private val logger = logger<HTTPMessageCodec>()
 
-    fun clear() {
+    override fun clear() {
         requestLineBuffer.clear()
         headersBuffer.clear()
         entityBuffer.clear()
@@ -82,7 +62,7 @@ class HTTPMessageCodec(
         headers = HTTPHeaders()
     }
 
-    suspend fun consume(bytes: ByteBuffer) {
+    override suspend fun consume(bytes: ByteBuffer) {
         readLoop@ while (bytes.hasRemaining()) {
             when (state) {
                 ConsumeState.REQUEST_LINE -> {
