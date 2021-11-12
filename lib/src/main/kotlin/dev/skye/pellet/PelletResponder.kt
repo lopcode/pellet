@@ -1,6 +1,5 @@
 package dev.skye.pellet
 
-import dev.skye.pellet.extension.awaitWrite
 import java.io.IOException
 
 class PelletResponder(
@@ -11,7 +10,7 @@ class PelletResponder(
         val noContent = "HTTP/1.1 204 No Content\r\n\r\n"
         val bytes = Charsets.US_ASCII.encode(noContent)
         try {
-            client.socket.awaitWrite(bytes)
+            client.write(bytes)
         } catch (exception: IOException) {
             // ignore
         }
