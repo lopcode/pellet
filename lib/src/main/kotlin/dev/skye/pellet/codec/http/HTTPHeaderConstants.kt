@@ -1,4 +1,4 @@
-package dev.skye.pellet
+package dev.skye.pellet.codec.http
 
 object HTTPHeaderConstants {
 
