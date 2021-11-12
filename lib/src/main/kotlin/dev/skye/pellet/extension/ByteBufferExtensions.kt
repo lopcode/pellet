@@ -1,9 +1,9 @@
-package dev.skye.pellet
+package dev.skye.pellet.extension
 
 import java.nio.ByteBuffer
 import java.nio.charset.Charset
 
-fun ByteBuffer.trimTrailing(byte: Byte): ByteBuffer {
+internal fun ByteBuffer.trimTrailing(byte: Byte): ByteBuffer {
     val limit = this.limit()
 
     if (limit < 1) {
@@ -16,7 +16,7 @@ fun ByteBuffer.trimTrailing(byte: Byte): ByteBuffer {
     return this
 }
 
-fun ByteBuffer.stringifyAndClear(charset: Charset = Charsets.US_ASCII): String {
+internal fun ByteBuffer.stringifyAndClear(charset: Charset = Charsets.US_ASCII): String {
     assert(this.position() == 0)
     val string = if (this.hasArray()) {
         String(this.array(), 0, this.limit(), charset)
@@ -30,7 +30,7 @@ fun ByteBuffer.stringifyAndClear(charset: Charset = Charsets.US_ASCII): String {
 }
 
 // Returns the next position of a byte, by ignoring bytes before the current position()
-fun ByteBuffer.nextPositionOfOrNull(needle: Byte): Int? {
+internal fun ByteBuffer.nextPositionOfOrNull(needle: Byte): Int? {
     val position = this.position()
     val limit = this.limit()
     for (i in position.until(limit)) {
@@ -43,7 +43,7 @@ fun ByteBuffer.nextPositionOfOrNull(needle: Byte): Int? {
 }
 
 // Advances a ByteBuffer position by count, up to and including the current limit
-fun ByteBuffer.advance(count: Int): ByteBuffer {
+internal fun ByteBuffer.advance(count: Int): ByteBuffer {
     val newPosition = this.position() + count
     return if (newPosition > this.limit()) {
         this.position(this.limit())

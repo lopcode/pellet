@@ -1,6 +1,7 @@
-package dev.skye.pellet
+package dev.skye.pellet.extension
 
 import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.nio.ByteBuffer
 import java.nio.channels.AsynchronousChannel
@@ -58,6 +59,7 @@ object AnyAsyncContinuationHandler : CompletionHandler<Any, CancellableContinuat
         result: Any,
         attachment: CancellableContinuation<Any>
     ) {
+        @OptIn(ExperimentalCoroutinesApi::class)
         attachment.resume(result, null)
     }
 
