@@ -8,12 +8,14 @@ object Demo
 val logger = logger<Demo>()
 
 fun main() = runBlocking {
-    logger.info("Pellet demo starting...")
-    val pellet = Pellet("localhost", 8082)
+    val connectors = listOf(
+        PelletConnector.HTTP("localhost", 8082),
+        PelletConnector.HTTP("localhost", 8083),
+    )
+    val pellet = PelletServer(connectors)
     val job = pellet.start { context, responder ->
         logger.debug("got request: ${context.message}")
         responder.writeNoContent()
     }
     job.join()
-    logger.info("Pellet demo ended")
 }

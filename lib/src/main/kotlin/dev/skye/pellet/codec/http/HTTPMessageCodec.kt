@@ -11,7 +11,7 @@ import java.nio.ByteBuffer
 import kotlin.math.min
 
 internal class HTTPMessageCodec(
-    private val output: HTTPMessageCodecOutput
+    private val output: HTTPRequestHandler
 ) : Codec {
 
     private val requestLineBuffer = ByteBuffer.allocateDirect(4096)
@@ -79,7 +79,7 @@ internal class HTTPMessageCodec(
 
                     handleHeaderLine()
                     if (state == ConsumeState.REQUEST_LINE) {
-                        output.output(buildMessage())
+                        output.handle(buildMessage())
                     }
                 }
                 ConsumeState.FIXED_ENTITY -> {
@@ -88,7 +88,7 @@ internal class HTTPMessageCodec(
                     }
 
                     handleFixedEntity()
-                    output.output(buildMessage())
+                    output.handle(buildMessage())
                 }
                 ConsumeState.CHUNKED_ENTITY -> {
                     when (chunkState) {
@@ -104,7 +104,6 @@ internal class HTTPMessageCodec(
                                 continue@readLoop
                             }
 
-                            logger.info("read data chunk line")
                             chunkState = ChunkConsumeState.SIZE_LINE
                         }
                         ChunkConsumeState.END_LINE -> {
@@ -115,9 +114,9 @@ internal class HTTPMessageCodec(
                             val endLine = chunkLineBuffer.stringifyAndClear(Charsets.US_ASCII)
                             assert(endLine.isEmpty())
 
-                            logger.info("read chunk end line")
+                            logger.debug("read chunk end line")
                             handleChunkedEntity()
-                            output.output(buildMessage())
+                            output.handle(buildMessage())
                         }
                     }
                 }
@@ -133,14 +132,12 @@ internal class HTTPMessageCodec(
         assert((expectedChunkSizeOctets + readChunkSizeOctets) < entityBuffer.capacity())
         when (expectedChunkSizeOctets) {
             0 -> {
-                logger.info("read last chunk size line")
                 chunkState = ChunkConsumeState.END_LINE
             }
             else -> {
                 this.expectedChunkSizeOctets = expectedChunkSizeOctets
                 this.readChunkSizeOctets = 0
                 chunkState = ChunkConsumeState.DATA_LINE
-                logger.info("read size chunk line")
             }
         }
         chunkLineBuffer.clear()
