@@ -1,21 +1,22 @@
 package dev.skye.pellet.codec.http
 
+import dev.skye.pellet.CloseReason
 import dev.skye.pellet.PelletClient
 import dev.skye.pellet.PelletContext
 import dev.skye.pellet.PelletResponder
-import dev.skye.pellet.codec.CodecOutput
+import dev.skye.pellet.codec.CodecHandler
 
-internal class HTTPMessageCodecOutput(
+internal class HTTPRequestHandler(
     private val client: PelletClient,
     private val action: suspend (PelletContext, PelletResponder) -> Unit
-) : CodecOutput<HTTPRequestMessage> {
+) : CodecHandler<HTTPRequestMessage> {
 
-    override suspend fun output(thing: HTTPRequestMessage) {
-        val request = PelletContext(thing, client)
+    override suspend fun handle(request: HTTPRequestMessage) {
+        val context = PelletContext(request, client)
         val responder = PelletResponder(client)
-        action(request, responder)
+        action(context, responder)
 
-        val connectionHeader = thing.headers.getSingleOrNull(HTTPHeaderConstants.connection)
+        val connectionHeader = request.headers.getSingleOrNull(HTTPHeaderConstants.connection)
         handleConnectionHeader(connectionHeader)
     }
 
@@ -30,7 +31,7 @@ internal class HTTPMessageCodecOutput(
         }
 
         if (connectionHeader.rawValue.equals(HTTPHeaderConstants.close, ignoreCase = true)) {
-            client.close()
+            client.close(CloseReason.ServerInitiated)
         }
     }
 }

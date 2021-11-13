@@ -1,46 +1,51 @@
 # Pellet
 
-An experimental Kotlin web framework. I've used a lot of "web frameworks" in various languages over the years, and want to better understand the advantages and disadvantages of their choices - from the perspective of both their internal architecture and their developer-facing APIs.
+An experimental Kotlin web framework, designed to be fast, lean, stable, and ergonomic.
 
-The goal is to produce a functioning web framework that I'm happy to use for my own projects, using the design goals below to guide the implementation.
+I wrote a blog post describing why I started this project, and what the design goals are: https://www.carrot.blog/posts/2021/11/building-pellet-introduction/
 
 If you're interested, please star the project or [sponsor me](https://github.com/sponsors/CarrotCodes) to let me know it's worth spending time on ⭐️
 
-## Design goals
+## Demo
 
-These design goals are a mixture of opinions I've formed over time, and notes to myself to guide the implementation. They're likely to expand and change as I make progress!
+You can run the program in `Demo.kt` to start two connectors by default:
+```
+[main] INFO dev.skye.pellet.PelletServer - Pellet server starting...
+[main] INFO dev.skye.pellet.PelletServer - Please support development at https://www.pellet.dev/support
+[main] INFO dev.skye.pellet.PelletServer - Starting connectors:
+[main] INFO dev.skye.pellet.PelletServer -   HTTP(hostname=localhost, port=8082)
+[main] INFO dev.skye.pellet.PelletServer -   HTTP(hostname=localhost, port=8083)
+```
 
-The framework should be:
+Then you can send requests with a tool like [httpie](https://httpie.io/):
+```
+$ http -v localhost:8082/                 
+GET / HTTP/1.1
+Accept: */*
+Accept-Encoding: gzip, deflate
+Connection: keep-alive
+Host: localhost:8082
+User-Agent: HTTPie/2.6.0
 
-* Simple
-  * Both for developers (users of the framework), and to maintain it (myself)
-  * Kotlin-first - Java interop is a bonus
-  * Only target the JVM - not cross-platform
-  * Reduce the size of the dependency graph where possible
-  * Keep the use of annotations to a minimum
-* Modern
-  * Target latest stable Kotlin
-  * Target latest LTS Java minimum, maybe latest stable
-  * Favour proven deployment methods and patterns - e.g. 12 factor app
-  * Favour the use of containers
-  * Use platform advancements like Coroutines, or Loom
-* Opinionated / use-case driven
-  * Demo/sample projects from the start, to drive implementation
-  * Don't be afraid to present a single good way of doing something
-  * Favour a "three layer" architecture - `api`, `domain`, and `data`
-  * Make sensible choices for the basics
-    * Logging (SLF4J)
-    * Metrics (OpenTelemetry)
-    * Database access (JDBI? - avoid ORMs)
-    * Database migrations (TBD)
-    * Messaging / message queues (TBD)
-* Reliable
-  * High unit test coverage
-  * Integration tests
-  * Real usage tested with sample projects
-* Fast to start up, and run
-  * Proven with benchmarks
-  * Reflectionless
+
+
+HTTP/1.1 204 No Content
+
+```
+
+Or run load tests locally using [hey](https://github.com/rakyll/hey):
+```
+$ hey -z 20s http://localhost:8083
+
+Summary:
+  Total:	20.0010 secs
+  Slowest:	0.0356 secs
+  Fastest:	0.0000 secs
+  Average:	0.0010 secs
+  Requests/sec:	93873.9401
+  
+...
+```
 
 # License
 
