@@ -1,6 +1,8 @@
 package dev.skye.pellet
 
-import dev.skye.pellet.connector.HTTPConnector
+import dev.skye.pellet.codec.http.HTTPMessageCodec
+import dev.skye.pellet.codec.http.HTTPRequestHandler
+import dev.skye.pellet.connector.SocketConnector
 import dev.skye.pellet.logging.logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.InternalCoroutinesApi
@@ -46,7 +48,11 @@ class PelletServer(
             when (it) {
                 is PelletConnector.HTTP -> {
                     val connectorAddress = InetSocketAddress(it.hostname, it.port)
-                    val connector = HTTPConnector(scope, connectorAddress, action)
+                    val connector = SocketConnector(scope, connectorAddress) { client ->
+                        val output = HTTPRequestHandler(client, action)
+                        val codec = HTTPMessageCodec(output)
+                        codec
+                    }
                     connector.createAcceptJob()
                 }
             }

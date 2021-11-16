@@ -11,12 +11,12 @@ internal class HTTPRequestHandler(
     private val action: suspend (PelletContext, PelletResponder) -> Unit
 ) : CodecHandler<HTTPRequestMessage> {
 
-    override suspend fun handle(request: HTTPRequestMessage) {
-        val context = PelletContext(request, client)
+    override suspend fun handle(output: HTTPRequestMessage) {
+        val context = PelletContext(output, client)
         val responder = PelletResponder(client)
         action(context, responder)
 
-        val connectionHeader = request.headers.getSingleOrNull(HTTPHeaderConstants.connection)
+        val connectionHeader = output.headers.getSingleOrNull(HTTPHeaderConstants.connection)
         handleConnectionHeader(connectionHeader)
     }
 

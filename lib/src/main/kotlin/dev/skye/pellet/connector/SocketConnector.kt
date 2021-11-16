@@ -2,10 +2,7 @@ package dev.skye.pellet.connector
 
 import dev.skye.pellet.CloseReason
 import dev.skye.pellet.PelletClient
-import dev.skye.pellet.PelletContext
-import dev.skye.pellet.PelletResponder
-import dev.skye.pellet.codec.http.HTTPMessageCodec
-import dev.skye.pellet.codec.http.HTTPRequestHandler
+import dev.skye.pellet.codec.Codec
 import dev.skye.pellet.extension.awaitRead
 import dev.skye.pellet.logger
 import kotlinx.coroutines.CoroutineScope
@@ -18,10 +15,10 @@ import java.nio.ByteBuffer
 import java.nio.channels.AsynchronousSocketChannel
 import java.nio.channels.ClosedChannelException
 
-class HTTPConnector(
+class SocketConnector(
     private val scope: CoroutineScope,
     private val socketAddress: SocketAddress,
-    private val action: suspend (PelletContext, PelletResponder) -> Unit
+    private val codecFactory: (PelletClient) -> Codec
 ) : Connector {
 
     override fun createAcceptJob() = createSocketAcceptJob(scope, socketAddress, this::launchReadLoop)
@@ -30,14 +27,13 @@ class HTTPConnector(
         socketChannel: AsynchronousSocketChannel
     ) = scope.launch {
         val client = PelletClient(socketChannel)
-        val output = HTTPRequestHandler(client, action)
-        val codec = HTTPMessageCodec(output)
-        client.codec = codec
-        readLoop(client, socketChannel, bufferSize = 1024)
+        val codec = codecFactory(client)
+        readLoop(client, codec, socketChannel, bufferSize = 1024)
     }
 
     private suspend fun CoroutineScope.readLoop(
         client: PelletClient,
+        codec: Codec,
         socketChannel: AsynchronousSocketChannel,
         bufferSize: Int
     ) {
@@ -59,7 +55,7 @@ class HTTPConnector(
             }
 
             val bytesToConsume = buffer.flip().asReadOnlyBuffer()
-            client.codec.consume(bytesToConsume)
+            codec.consume(bytesToConsume)
             buffer.clear()
 
             yield()
