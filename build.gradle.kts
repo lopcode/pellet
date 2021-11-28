@@ -2,7 +2,7 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 
 plugins {
-    kotlin("jvm") version "1.5.30"
+    kotlin("jvm") version "1.6.0"
     id("org.jlleitschuh.gradle.ktlint") version "10.2.0"
 }
 
@@ -14,17 +14,55 @@ subprojects {
     apply(plugin = "org.jetbrains.kotlin.jvm")
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
 
+    sourceSets.create("integrationTest") {
+        compileClasspath += sourceSets["main"].output + sourceSets["test"].output
+        runtimeClasspath += sourceSets["main"].output + sourceSets["test"].output
+        java.srcDir("src/integrationTest/kotlin")
+        resources.srcDir("src/integrationTest/resources")
+    }
+
+    val integrationTestImplementation by configurations.getting {
+        extendsFrom(configurations.implementation.get())
+    }
+
+    configurations["integrationTestRuntimeOnly"].extendsFrom(configurations.runtimeOnly.get())
+
+    task<Test>("integrationTest") {
+        description = "Runs integration tests."
+        group = "verification"
+
+        testClassesDirs = sourceSets["integrationTest"].output.classesDirs
+        classpath = sourceSets["integrationTest"].runtimeClasspath
+        shouldRunAfter("test")
+    }
+
     dependencies {
         implementation(platform(kotlin("bom")))
         implementation(kotlin("stdlib-jdk8"))
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2")
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0-RC")
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.6.0-RC")
         implementation("org.slf4j:slf4j-api:1.7.32")
+        runtimeOnly("org.slf4j:slf4j-simple:1.7.32")
 
         testImplementation(kotlin("test"))
         testImplementation(kotlin("test-junit"))
+
+        integrationTestImplementation(kotlin("test"))
+        integrationTestImplementation(kotlin("test-junit"))
+        integrationTestImplementation((platform("com.squareup.okhttp3:okhttp-bom:4.9.3")))
+        integrationTestImplementation("com.squareup.okhttp3:okhttp")
     }
 
     tasks.test {
+        testLogging {
+            events = TestLogEvent.values().toSet() - TestLogEvent.STARTED
+            exceptionFormat = TestExceptionFormat.FULL
+        }
+        exclude("dev.skye.pellet.integration")
+    }
+
+    tasks.named<Test>("integrationTest") {
+        systemProperty("benchmark.requests.total", System.getProperty("benchmark.requests.total"))
         testLogging {
             events = TestLogEvent.values().toSet() - TestLogEvent.STARTED
             exceptionFormat = TestExceptionFormat.FULL
