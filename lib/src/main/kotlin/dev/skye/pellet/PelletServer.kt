@@ -5,10 +5,9 @@ import dev.skye.pellet.codec.http.HTTPRequestHandler
 import dev.skye.pellet.connector.SocketConnector
 import dev.skye.pellet.logging.logger
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.scheduling.ExperimentalCoroutineDispatcher
 import java.net.InetSocketAddress
 import kotlin.coroutines.CoroutineContext
 
@@ -30,9 +29,7 @@ class PelletServer(
         logger.info("Please support development at https://www.pellet.dev/support")
 
         val processors = Runtime.getRuntime().availableProcessors().coerceAtLeast(2)
-
-        @OptIn(InternalCoroutinesApi::class)
-        val dispatcher = ExperimentalCoroutineDispatcher().limited(processors)
+        val dispatcher = Dispatchers.IO.limitedParallelism(processors)
         val context = SupervisorJob()
         val scope = object : CoroutineScope {
             override val coroutineContext: CoroutineContext

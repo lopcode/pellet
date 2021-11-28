@@ -10,6 +10,18 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v1
         with:
-          java-version: '16'
+          java-version: '17'
       - name: Run checks
         run: ./gradlew clean check --rerun-tasks
+  integration-tests:
+    name: Run integration tests
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: '17'
+      - name: Run checks
+        run: ./gradlew clean integrationTest --rerun-tasks -Dbenchmark.requests.total=100000

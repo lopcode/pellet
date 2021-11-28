@@ -4,10 +4,10 @@ import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class SanityTest {
+class DemoSenseCheckTest {
 
     @Test
-    fun `sanity test`() {
+    fun `sense check demo tests`() {
         assertTrue(true)
         assertFalse(false)
     }
