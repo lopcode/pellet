@@ -3,6 +3,8 @@ package dev.pellet.integration
 import dev.pellet.PelletConnector
 import dev.pellet.PelletServer
 import dev.pellet.logging.logger
+import dev.pellet.responder.http.HTTPRoute
+import dev.pellet.responder.http.PelletHTTPRouter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -35,16 +37,23 @@ class NoContentBenchmarkTest {
 
     @Test
     fun `benchmark no content response`() = runBlocking {
+        val counter = AtomicInteger(numberOfRequests)
         val connector = PelletConnector.HTTP(
-            hostname = "127.0.0.1",
-            port = 9001
+            endpoint = PelletConnector.Endpoint(
+                hostname = "127.0.0.1",
+                port = 9001
+            ),
+            router = PelletHTTPRouter(
+                routes = listOf(
+                    HTTPRoute("/") { _, responder ->
+                        counter.decrementAndGet()
+                        responder.writeNoContent()
+                    }
+                )
+            )
         )
         val pellet = PelletServer(listOf(connector))
-        val counter = AtomicInteger(numberOfRequests)
-        val job = pellet.start { _, responder ->
-            counter.decrementAndGet()
-            responder.writeNoContent()
-        }
+        val job = pellet.start()
 
         val client = OkHttpClient().newBuilder()
             .connectionPool(ConnectionPool(30, 1L, TimeUnit.MINUTES))

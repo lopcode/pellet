@@ -17,9 +17,7 @@ class PelletServer(
     private val connectors: List<PelletConnector>
 ) {
 
-    fun start(
-        action: suspend (PelletContext, PelletResponder) -> Unit
-    ): Job {
+    fun start(): Job {
         if (connectors.isEmpty()) {
             throw RuntimeException("Please define at least one connector")
         }
@@ -42,9 +40,10 @@ class PelletServer(
         val connectorJobs = connectors.map {
             when (it) {
                 is PelletConnector.HTTP -> {
-                    val connectorAddress = InetSocketAddress(it.hostname, it.port)
+                    val connectorAddress = InetSocketAddress(it.endpoint.hostname, it.endpoint.port)
+                    // todo: validate routes
                     val connector = SocketConnector(scope, connectorAddress) { client ->
-                        val output = HTTPRequestHandler(client, action)
+                        val output = HTTPRequestHandler(client, it.router)
                         val codec = HTTPMessageCodec(output)
                         codec
                     }
