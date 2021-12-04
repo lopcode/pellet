@@ -2,7 +2,7 @@ plugins {
     `java-library`
 }
 
-group = "dev.skye.pellet"
+group = "dev.pellet"
 
 repositories {
     mavenCentral()
