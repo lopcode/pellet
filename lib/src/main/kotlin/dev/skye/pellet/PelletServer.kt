@@ -28,8 +28,7 @@ class PelletServer(
         logger.info("Pellet server starting...")
         logger.info("Please support development at https://www.pellet.dev/support")
 
-        val processors = Runtime.getRuntime().availableProcessors().coerceAtLeast(2)
-        val dispatcher = Dispatchers.IO.limitedParallelism(processors)
+        val dispatcher = Dispatchers.Default
         val context = SupervisorJob()
         val scope = object : CoroutineScope {
             override val coroutineContext: CoroutineContext

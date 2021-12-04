@@ -47,15 +47,13 @@ class NoContentBenchmarkTest {
         }
 
         val client = OkHttpClient().newBuilder()
-            .connectionPool(ConnectionPool(50, 1L, TimeUnit.MINUTES))
+            .connectionPool(ConnectionPool(30, 1L, TimeUnit.MINUTES))
             .build()
-        client.dispatcher.maxRequestsPerHost = 50
+        client.dispatcher.maxRequestsPerHost = 30
         client.connectionPool.connectionCount()
         logger.info("sending ${counter.get()} requests...")
 
-        val processors = Runtime.getRuntime().availableProcessors().coerceAtLeast(2)
-        val dispatcher = Dispatchers.IO.limitedParallelism(processors)
-
+        val dispatcher = Dispatchers.Default
         val channel = Channel<Request>()
         val supervisor = SupervisorJob()
         val scope = CoroutineScope(dispatcher + supervisor)
@@ -69,8 +67,9 @@ class NoContentBenchmarkTest {
             }
         }
 
+        val processorCount = Runtime.getRuntime().availableProcessors()
         val startTime = Instant.now()
-        processors.downTo(0).map {
+        processorCount.downTo(0).map {
             scope.async {
                 sendRequests(client, channel)
             }

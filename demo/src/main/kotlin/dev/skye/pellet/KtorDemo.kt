@@ -9,7 +9,7 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 
 fun main() {
-    embeddedServer(Netty, port = 8083) {
+    embeddedServer(Netty, port = 8090) {
         routing {
             get("/") {
                 call.respond(HttpStatusCode.NoContent)
