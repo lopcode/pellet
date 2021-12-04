@@ -10,11 +10,11 @@ If you're interested, please star the project or [sponsor me](https://github.com
 
 You can run the program in `Demo.kt` to start two connectors by default:
 ```
-[main] INFO dev.skye.pellet.PelletServer - Pellet server starting...
-[main] INFO dev.skye.pellet.PelletServer - Please support development at https://www.pellet.dev/support
-[main] INFO dev.skye.pellet.PelletServer - Starting connectors:
-[main] INFO dev.skye.pellet.PelletServer -   HTTP(hostname=localhost, port=8082)
-[main] INFO dev.skye.pellet.PelletServer -   HTTP(hostname=localhost, port=8083)
+[main] INFO dev.pellet.PelletServer - Pellet server starting...
+[main] INFO dev.pellet.PelletServer - Please support development at https://www.pellet.dev/support
+[main] INFO dev.pellet.PelletServer - Starting connectors:
+[main] INFO dev.pellet.PelletServer -   HTTP(hostname=localhost, port=8082)
+[main] INFO dev.pellet.PelletServer -   HTTP(hostname=localhost, port=8083)
 ```
 
 Then you can send requests with a tool like [httpie](https://httpie.io/):

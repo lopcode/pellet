@@ -58,7 +58,7 @@ subprojects {
             events = TestLogEvent.values().toSet() - TestLogEvent.STARTED
             exceptionFormat = TestExceptionFormat.FULL
         }
-        exclude("dev.skye.pellet.integration")
+        exclude("dev.pellet.integration")
     }
 
     tasks.named<Test>("integrationTest") {
