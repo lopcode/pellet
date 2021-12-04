@@ -2,19 +2,25 @@ package dev.pellet.codec.http
 
 import dev.pellet.CloseReason
 import dev.pellet.PelletClient
-import dev.pellet.PelletContext
-import dev.pellet.PelletResponder
 import dev.pellet.codec.CodecHandler
+import dev.pellet.responder.http.HTTPRouting
+import dev.pellet.responder.http.PelletHTTPContext
+import dev.pellet.responder.http.PelletHTTPResponder
 
 internal class HTTPRequestHandler(
     private val client: PelletClient,
-    private val action: suspend (PelletContext, PelletResponder) -> Unit
+    private val router: HTTPRouting
 ) : CodecHandler<HTTPRequestMessage> {
 
     override suspend fun handle(output: HTTPRequestMessage) {
-        val context = PelletContext(output, client)
-        val responder = PelletResponder(client)
-        action(context, responder)
+        val context = PelletHTTPContext(output, client)
+        val responder = PelletHTTPResponder(client)
+        val route = router.route(output)
+        if (route == null) {
+            responder.writeNotFound()
+        } else {
+            route.action(context, responder)
+        }
 
         val connectionHeader = output.headers.getSingleOrNull(HTTPHeaderConstants.connection)
         handleConnectionHeader(connectionHeader)
