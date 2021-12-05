@@ -18,18 +18,35 @@ fun main() = runBlocking {
     }
     val pellet = pelletServer {
         httpConnector {
-            endpoint {
-                hostname = "localhost"
+            endpoint = PelletConnector.Endpoint(
+                hostname = "localhost",
                 port = 8082
-            }
+            )
             router = sharedRouter
         }
         httpConnector {
-            endpoint {
-                hostname = "localhost"
+            endpoint = PelletConnector.Endpoint(
+                hostname = "localhost",
                 port = 8083
-            }
+            )
             router = sharedRouter
+        }
+    }
+    pellet.start().join()
+}
+
+fun simpleMain() = runBlocking {
+    val pellet = pelletServer {
+        httpConnector {
+            endpoint = PelletConnector.Endpoint(
+                hostname = "localhost",
+                port = 8082
+            )
+            router {
+                get("/v1/hello") { _, responder ->
+                    responder.writeNoContent()
+                }
+            }
         }
     }
     pellet.start().join()
