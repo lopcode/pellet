@@ -1,4 +1,4 @@
-package dev.pellet.responder.http
+package dev.pellet.routing
 
 import dev.pellet.codec.http.HTTPRequestMessage
 
@@ -11,7 +11,7 @@ class PelletHTTPRouter(
     ): HTTPRoute? {
         // todo: evaluate route paths properly and cache result
         return routes.firstOrNull {
-            it.path == message.requestLine.resourceUri
+            it.method == message.requestLine.method && it.path == message.requestLine.resourceUri
         }
     }
 }

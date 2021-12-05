@@ -38,11 +38,11 @@ Or run load tests locally using [hey](https://github.com/rakyll/hey):
 $ hey -z 20s http://localhost:8083
 
 Summary:
-  Total:	20.0010 secs
-  Slowest:	0.0356 secs
+  Total:	20.0007 secs
+  Slowest:	0.0903 secs
   Fastest:	0.0000 secs
   Average:	0.0010 secs
-  Requests/sec:	93873.9401
+  Requests/sec:	103331.5273
   
 ...
 ```
