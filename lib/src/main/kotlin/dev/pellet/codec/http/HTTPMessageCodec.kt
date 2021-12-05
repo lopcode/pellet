@@ -8,6 +8,7 @@ import dev.pellet.extension.trimLWS
 import dev.pellet.extension.trimTrailing
 import dev.pellet.logging.logger
 import java.nio.ByteBuffer
+import java.util.Locale
 import kotlin.math.min
 
 internal class HTTPMessageCodec(
@@ -240,7 +241,7 @@ internal class HTTPMessageCodec(
 
         val requestLine = this.requestLine ?: throw RuntimeException("no request line available")
         state = when {
-            requestLine.method == "HEAD" -> {
+            requestLine.method == HTTPMethod.Head -> {
                 ConsumeState.REQUEST_LINE
             }
             isChunked -> {
@@ -357,9 +358,22 @@ internal class HTTPMessageCodec(
             return Result.failure(RuntimeException("malformed version"))
         }
 
+        val httpMethod = when (method.lowercase(Locale.ENGLISH)) {
+            "get" -> HTTPMethod.Get
+            "post" -> HTTPMethod.Post
+            "put" -> HTTPMethod.Put
+            "patch" -> HTTPMethod.Patch
+            "delete" -> HTTPMethod.Delete
+            "head" -> HTTPMethod.Head
+            "connect" -> HTTPMethod.Connect
+            "options" -> HTTPMethod.Options
+            "trace" -> HTTPMethod.Trace
+            else -> HTTPMethod.Custom(method)
+        }
+
         return Result.success(
             HTTPRequestLine(
-                method = method,
+                method = httpMethod,
                 resourceUri = resourceUri,
                 httpVersion = httpVersion
             )

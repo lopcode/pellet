@@ -1,6 +1,6 @@
 package dev.pellet
 
-import dev.pellet.responder.http.HTTPRouting
+import dev.pellet.routing.HTTPRouting
 
 sealed class PelletConnector {
 
