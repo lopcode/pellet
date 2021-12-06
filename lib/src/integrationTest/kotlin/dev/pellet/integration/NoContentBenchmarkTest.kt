@@ -1,6 +1,7 @@
 package dev.pellet.integration
 
 import dev.pellet.PelletBuilder.pelletServer
+import dev.pellet.PelletConnector
 import dev.pellet.logging.logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,10 +38,10 @@ class NoContentBenchmarkTest {
         val counter = AtomicInteger(numberOfRequests)
         val pellet = pelletServer {
             httpConnector {
-                endpoint {
-                    hostname = "127.0.0.1"
-                    port = 9001
-                }
+                endpoint = PelletConnector.Endpoint(
+                    "127.0.0.1",
+                    9001
+                )
                 router {
                     get("/") { _, responder ->
                         counter.decrementAndGet()
