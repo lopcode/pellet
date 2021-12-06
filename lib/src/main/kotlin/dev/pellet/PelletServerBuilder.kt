@@ -5,10 +5,15 @@ import dev.pellet.handler.PelletHTTPRouteHandling
 import dev.pellet.routing.HTTPRoute
 import dev.pellet.routing.PelletHTTPRouter
 
+@DslMarker
+@Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
+annotation class PelletBuilderDslTag
+
+@PelletBuilderDslTag
 object PelletBuilder {
 
     fun pelletServer(
-        lambda: PelletServerBuilder.() -> Unit
+        lambda: (@PelletBuilderDslTag PelletServerBuilder).() -> Unit
     ): PelletServer {
         val builder = PelletServerBuilder()
         lambda(builder)
@@ -16,7 +21,7 @@ object PelletBuilder {
     }
 
     suspend fun httpRouter(
-        lambda: suspend RouterBuilder.() -> Unit
+        lambda: suspend (@PelletBuilderDslTag RouterBuilder).() -> Unit
     ): PelletHTTPRouter {
         val builder = RouterBuilder()
         lambda(builder)
@@ -25,6 +30,7 @@ object PelletBuilder {
     }
 }
 
+@PelletBuilderDslTag
 class RouterBuilder {
 
     val routes = mutableListOf<HTTPRoute>()
@@ -37,61 +43,44 @@ class RouterBuilder {
         routes.add(HTTPRoute(HTTPMethod.Post, path, handler))
     }
 
-    fun build(): List<HTTPRoute> {
+    internal fun build(): List<HTTPRoute> {
         return routes
     }
 }
 
+@PelletBuilderDslTag
 class PelletServerBuilder {
 
     val connectors = mutableListOf<PelletConnector>()
 
-    fun httpConnector(lambda: HTTPConnectorBuilder.() -> Unit) {
+    fun httpConnector(lambda: (@PelletBuilderDslTag HTTPConnectorBuilder).() -> Unit) {
         val builder = HTTPConnectorBuilder()
         lambda(builder)
         connectors.add(builder.build())
     }
 
-    fun build(): PelletServer {
+    internal fun build(): PelletServer {
         return PelletServer(connectors)
     }
 }
 
+@PelletBuilderDslTag
 class HTTPConnectorBuilder {
 
     lateinit var endpoint: PelletConnector.Endpoint
     lateinit var router: PelletHTTPRouter
 
-    fun endpoint(lambda: EndpointBuilder.() -> Unit) {
-        val builder = EndpointBuilder()
-        lambda(builder)
-        endpoint = builder.build()
-    }
-
-    fun router(lambda: RouterBuilder.() -> Unit) {
+    fun router(lambda: (@PelletBuilderDslTag RouterBuilder).() -> Unit) {
         val builder = RouterBuilder()
         lambda(builder)
         val routes = builder.build()
         router = PelletHTTPRouter(routes)
     }
 
-    fun build(): PelletConnector {
+    internal fun build(): PelletConnector {
         return PelletConnector.HTTP(
             endpoint,
             router
-        )
-    }
-}
-
-class EndpointBuilder {
-
-    lateinit var hostname: String
-    var port: Int = 0
-
-    fun build(): PelletConnector.Endpoint {
-        return PelletConnector.Endpoint(
-            hostname,
-            port
         )
     }
 }
