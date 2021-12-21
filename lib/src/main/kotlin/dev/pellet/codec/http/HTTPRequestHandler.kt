@@ -1,6 +1,7 @@
 package dev.pellet.codec.http
 
 import dev.pellet.CloseReason
+import dev.pellet.PelletBufferPool
 import dev.pellet.PelletClient
 import dev.pellet.codec.CodecHandler
 import dev.pellet.responder.http.PelletHTTPContext
@@ -9,12 +10,13 @@ import dev.pellet.routing.HTTPRouting
 
 internal class HTTPRequestHandler(
     private val client: PelletClient,
-    private val router: HTTPRouting
+    private val router: HTTPRouting,
+    private val pool: PelletBufferPool
 ) : CodecHandler<HTTPRequestMessage> {
 
     override suspend fun handle(output: HTTPRequestMessage) {
         val context = PelletHTTPContext(output, client)
-        val responder = PelletHTTPResponder(client)
+        val responder = PelletHTTPResponder(client, pool)
         val route = router.route(output)
         if (route == null) {
             responder.writeNotFound()

@@ -1,6 +1,7 @@
 package dev.pellet.connector
 
 import dev.pellet.CloseReason
+import dev.pellet.PelletBufferPool
 import dev.pellet.PelletClient
 import dev.pellet.codec.Codec
 import dev.pellet.extension.awaitRead
@@ -18,15 +19,20 @@ import java.nio.channels.ClosedChannelException
 class SocketConnector(
     private val scope: CoroutineScope,
     private val socketAddress: SocketAddress,
+    private val pool: PelletBufferPool,
     private val codecFactory: (PelletClient) -> Codec
 ) : Connector {
 
-    override fun createAcceptJob() = createSocketAcceptJob(scope, socketAddress, this::launchReadLoop)
+    override fun createAcceptJob() = createSocketAcceptJob(
+        scope,
+        socketAddress,
+        this::launchReadLoop
+    )
 
     private fun launchReadLoop(
         socketChannel: AsynchronousSocketChannel
     ) = scope.launch {
-        val client = PelletClient(socketChannel)
+        val client = PelletClient(socketChannel, pool)
         val codec = codecFactory(client)
         readLoop(client, codec, socketChannel, bufferSize = 1024)
     }

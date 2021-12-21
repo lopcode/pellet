@@ -5,5 +5,7 @@ import java.nio.ByteBuffer
 sealed class HTTPEntity {
 
     object NoContent : HTTPEntity()
-    data class Content(val buffer: ByteBuffer) : HTTPEntity()
+    data class Content(
+        val buffer: ByteBuffer
+    ) : HTTPEntity()
 }

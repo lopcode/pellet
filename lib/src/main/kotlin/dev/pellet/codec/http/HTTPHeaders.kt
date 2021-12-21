@@ -20,11 +20,12 @@ data class HTTPHeaders(
         return storage[normalisedName] ?: listOf()
     }
 
-    fun add(header: HTTPHeader) {
+    fun add(header: HTTPHeader): HTTPHeaders {
         val normalisedName = normaliseName(header.rawName)
         val list = storage[normalisedName] ?: mutableListOf()
         list.add(header)
         storage[normalisedName] = list
+        return this
     }
 
     private fun normaliseName(headerName: String): String {
@@ -33,5 +34,11 @@ data class HTTPHeaders(
 
     override fun toString(): String {
         return storage.toString()
+    }
+
+    fun forEach(lambda: (String, List<HTTPHeader>) -> Unit) {
+        storage.forEach {
+            lambda(it.key, it.value)
+        }
     }
 }
