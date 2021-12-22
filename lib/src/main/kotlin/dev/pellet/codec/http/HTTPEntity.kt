@@ -1,11 +1,11 @@
 package dev.pellet.codec.http
 
-import java.nio.ByteBuffer
+import dev.pellet.buffer.PelletBuffer
 
 sealed class HTTPEntity {
 
     object NoContent : HTTPEntity()
     data class Content(
-        val buffer: ByteBuffer
+        val buffer: PelletBuffer
     ) : HTTPEntity()
 }

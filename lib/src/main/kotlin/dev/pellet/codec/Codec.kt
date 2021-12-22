@@ -1,6 +1,6 @@
 package dev.pellet.codec
 
-import java.nio.ByteBuffer
+import dev.pellet.buffer.PelletBuffer
 
 /**
  * A codec maintains internal state, such that it can interpret a bag of bytes given to it, and output objects to a
@@ -12,5 +12,6 @@ import java.nio.ByteBuffer
 interface Codec {
 
     fun clear()
-    suspend fun consume(bytes: ByteBuffer)
+    fun release()
+    suspend fun consume(buffer: PelletBuffer)
 }

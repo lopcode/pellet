@@ -1,8 +1,8 @@
 package dev.pellet.responder.http
 
-import dev.pellet.PelletBuffer
-import dev.pellet.PelletBufferPool
 import dev.pellet.PelletClient
+import dev.pellet.buffer.PelletBuffer
+import dev.pellet.buffer.PelletBufferPooling
 import dev.pellet.codec.http.HTTPCharacters
 import dev.pellet.codec.http.HTTPEntity
 import dev.pellet.codec.http.HTTPHeader
@@ -13,7 +13,7 @@ import dev.pellet.codec.http.HTTPStatusLine
 
 class PelletHTTPResponder(
     private val client: PelletClient,
-    private val pool: PelletBufferPool
+    private val pool: PelletBufferPooling
 ) {
 
     suspend fun writeNoContent() {
@@ -79,14 +79,14 @@ class PelletHTTPResponder(
 
 private suspend fun PelletClient.write(
     message: HTTPResponseMessage,
-    pool: PelletBufferPool
+    pool: PelletBufferPooling
 ) {
     val buffer = pool.provide()
         .appendStatusLine(message.statusLine)
         .appendHeaders(message.headers)
         .appendEntity(message.entity)
         .flip()
-    this.write(buffer)
+    this.writeAndRelease(buffer)
 }
 
 private fun PelletBuffer.appendStatusLine(

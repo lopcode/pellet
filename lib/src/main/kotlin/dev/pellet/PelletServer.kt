@@ -1,5 +1,6 @@
 package dev.pellet
 
+import dev.pellet.buffer.AlwaysAllocatingPelletBufferPool
 import dev.pellet.codec.http.HTTPMessageCodec
 import dev.pellet.codec.http.HTTPRequestHandler
 import dev.pellet.connector.SocketConnector
@@ -17,7 +18,8 @@ class PelletServer(
     private val connectors: List<PelletConnector>
 ) {
 
-    private val writePool = PelletBufferPool(4096)
+    private val writePool = AlwaysAllocatingPelletBufferPool(4096)
+    private val readPool = AlwaysAllocatingPelletBufferPool(4096)
 
     fun start(): Job {
         if (connectors.isEmpty()) {
@@ -46,7 +48,7 @@ class PelletServer(
                     // todo: validate routes
                     val connector = SocketConnector(scope, connectorAddress, writePool) { client ->
                         val output = HTTPRequestHandler(client, it.router, writePool)
-                        val codec = HTTPMessageCodec(output)
+                        val codec = HTTPMessageCodec(output, readPool)
                         codec
                     }
                     connector.createAcceptJob()

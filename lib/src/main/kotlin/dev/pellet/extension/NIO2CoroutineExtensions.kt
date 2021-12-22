@@ -1,5 +1,6 @@
 package dev.pellet.extension
 
+import dev.pellet.buffer.PelletBuffer
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -21,10 +22,10 @@ suspend fun AsynchronousServerSocketChannel.awaitAccept(): AsynchronousSocketCha
 }
 
 suspend fun AsynchronousSocketChannel.awaitRead(
-    buffer: ByteBuffer
+    buffer: PelletBuffer
 ): Int {
     return suspendCancellableCoroutine { continuation ->
-        this.read(buffer, continuation, anyAsyncContinuationHandler())
+        this.read(buffer.byteBuffer, continuation, anyAsyncContinuationHandler())
         closeOnCancellation(continuation)
     }
 }
