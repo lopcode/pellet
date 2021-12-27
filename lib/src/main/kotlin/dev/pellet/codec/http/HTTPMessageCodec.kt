@@ -1,5 +1,7 @@
 package dev.pellet.codec.http
 
+import dev.pellet.buffer.PelletBuffer
+import dev.pellet.buffer.PelletBufferPooling
 import dev.pellet.codec.Codec
 import dev.pellet.extension.advance
 import dev.pellet.extension.nextPositionOfOrNull
@@ -7,21 +9,21 @@ import dev.pellet.extension.stringifyAndClear
 import dev.pellet.extension.trimLWS
 import dev.pellet.extension.trimTrailing
 import dev.pellet.logging.logger
-import java.nio.ByteBuffer
 import java.util.Locale
 import kotlin.math.min
 
 internal class HTTPMessageCodec(
-    private val output: HTTPRequestHandler
+    private val output: HTTPRequestHandler,
+    private val pool: PelletBufferPooling
 ) : Codec {
 
-    private val requestLineBuffer = ByteBuffer.allocateDirect(4096)
-    private val headersBuffer = ByteBuffer.allocateDirect(4096)
+    private val requestLineBuffer = pool.provide()
+    private val headersBuffer = pool.provide()
 
     private var expectedEntityOctets: Int = -1
     private var readEntityOctets: Int = -1
-    private val entityBuffer = ByteBuffer.allocateDirect(1024 * 16)
-    private val chunkLineBuffer = ByteBuffer.allocateDirect(256)
+    private val entityBuffer = pool.provide()
+    private val chunkLineBuffer = pool.provide()
     private var expectedChunkSizeOctets: Int = -1
     private var readChunkSizeOctets: Int = -1
     private var entity: HTTPEntity? = null
@@ -63,18 +65,25 @@ internal class HTTPMessageCodec(
         headers = HTTPHeaders()
     }
 
-    override suspend fun consume(bytes: ByteBuffer) {
-        readLoop@ while (bytes.hasRemaining()) {
+    override fun release() {
+        pool.release(requestLineBuffer)
+        pool.release(headersBuffer)
+        pool.release(entityBuffer)
+        pool.release(chunkLineBuffer)
+    }
+
+    override suspend fun consume(buffer: PelletBuffer) {
+        readLoop@ while (buffer.hasRemaining()) {
             when (state) {
                 ConsumeState.REQUEST_LINE -> {
-                    if (!consumeLine(bytes, requestLineBuffer)) {
+                    if (!consumeLine(buffer, requestLineBuffer)) {
                         continue@readLoop
                     }
 
                     handleRequestLine()
                 }
                 ConsumeState.HEADERS -> {
-                    if (!consumeLine(bytes, headersBuffer)) {
+                    if (!consumeLine(buffer, headersBuffer)) {
                         continue@readLoop
                     }
 
@@ -84,7 +93,7 @@ internal class HTTPMessageCodec(
                     }
                 }
                 ConsumeState.FIXED_ENTITY -> {
-                    if (!consumeFixedEntity(bytes, entityBuffer)) {
+                    if (!consumeFixedEntity(buffer, entityBuffer)) {
                         continue@readLoop
                     }
 
@@ -94,21 +103,21 @@ internal class HTTPMessageCodec(
                 ConsumeState.CHUNKED_ENTITY -> {
                     when (chunkState) {
                         ChunkConsumeState.SIZE_LINE -> {
-                            if (!consumeLine(bytes, chunkLineBuffer)) {
+                            if (!consumeLine(buffer, chunkLineBuffer)) {
                                 continue@readLoop
                             }
 
                             handleChunkSizeLine()
                         }
                         ChunkConsumeState.DATA_LINE -> {
-                            if (!consumeDataChunk(bytes, entityBuffer)) {
+                            if (!consumeDataChunk(buffer, entityBuffer)) {
                                 continue@readLoop
                             }
 
                             chunkState = ChunkConsumeState.SIZE_LINE
                         }
                         ChunkConsumeState.END_LINE -> {
-                            if (!consumeLine(bytes, chunkLineBuffer)) {
+                            if (!consumeLine(buffer, chunkLineBuffer)) {
                                 continue@readLoop
                             }
 
@@ -144,7 +153,7 @@ internal class HTTPMessageCodec(
         chunkLineBuffer.clear()
     }
 
-    private fun consumeFixedEntity(source: ByteBuffer, target: ByteBuffer): Boolean {
+    private fun consumeFixedEntity(source: PelletBuffer, target: PelletBuffer): Boolean {
         if (readEntityOctets < expectedEntityOctets) {
             val remainingOctets = expectedEntityOctets - readEntityOctets
             val availableOctets = min(source.remaining(), remainingOctets)
@@ -161,7 +170,7 @@ internal class HTTPMessageCodec(
         return true
     }
 
-    private fun consumeDataChunk(source: ByteBuffer, target: ByteBuffer): Boolean {
+    private fun consumeDataChunk(source: PelletBuffer, target: PelletBuffer): Boolean {
         val expectedSizeWithTrailingCRLF = expectedChunkSizeOctets + 2
         if (readChunkSizeOctets < expectedSizeWithTrailingCRLF) {
             val remainingOctets = expectedSizeWithTrailingCRLF - readChunkSizeOctets
@@ -184,11 +193,10 @@ internal class HTTPMessageCodec(
     private fun handleFixedEntity() {
         entityBuffer.flip()
         entity = HTTPEntity.Content(
-            buffer = ByteBuffer
-                .allocate(expectedEntityOctets)
+            buffer = pool.provide()
+                .limit(expectedEntityOctets)
                 .put(entityBuffer)
                 .flip()
-                .asReadOnlyBuffer()
         )
         entityBuffer.clear()
         expectedEntityOctets = -1
@@ -199,11 +207,10 @@ internal class HTTPMessageCodec(
     private fun handleChunkedEntity() {
         entityBuffer.flip()
         entity = HTTPEntity.Content(
-            buffer = ByteBuffer
-                .allocate(entityBuffer.limit())
+            buffer = pool.provide()
+                .limit(entityBuffer.limit())
                 .put(entityBuffer)
                 .flip()
-                .asReadOnlyBuffer()
         )
         entityBuffer.clear()
         expectedChunkSizeOctets = -1
@@ -273,7 +280,7 @@ internal class HTTPMessageCodec(
 
     // Copies bytes from the source to the target buffer until LF is found
     // Returns true if a CRLF terminated line as been accumulated, false otherwise
-    private fun consumeLine(source: ByteBuffer, target: ByteBuffer): Boolean {
+    private fun consumeLine(source: PelletBuffer, target: PelletBuffer): Boolean {
         when (val nextLineFeedPosition = source.nextPositionOfOrNull(HTTPCharacters.LINE_FEED_BYTE)) {
             null -> {
                 // No LF found in buffer - accumulate the entirety of source

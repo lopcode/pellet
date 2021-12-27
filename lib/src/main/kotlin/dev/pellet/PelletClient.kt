@@ -1,7 +1,8 @@
 package dev.pellet
 
+import dev.pellet.buffer.PelletBuffer
+import dev.pellet.buffer.PelletBufferPooling
 import dev.pellet.extension.awaitWrite
-import java.nio.ByteBuffer
 import java.nio.channels.AsynchronousSocketChannel
 
 sealed class CloseReason {
@@ -12,12 +13,16 @@ sealed class CloseReason {
 }
 
 class PelletClient(
-    private val socket: AsynchronousSocketChannel
+    private val socket: AsynchronousSocketChannel,
+    private val pool: PelletBufferPooling
 ) {
-    suspend fun write(bytes: ByteBuffer): Result<Int> {
-        return runCatching {
-            socket.awaitWrite(bytes)
+
+    suspend fun writeAndRelease(buffer: PelletBuffer): Result<Int> {
+        val result = runCatching {
+            socket.awaitWrite(buffer.byteBuffer)
         }
+        pool.release(buffer)
+        return result
     }
 
     fun close(source: CloseReason): Result<Unit> {

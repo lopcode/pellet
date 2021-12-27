@@ -19,6 +19,7 @@ object HTTPCharacters {
     val HORIZONTAL_TAB = 9.toChar()
     val QUOTE = 34.toChar()
     val COLON = 58.toChar()
+    val COMMA = 44.toChar()
 
     val LWS_CHARS = setOf(SPACE, HORIZONTAL_TAB)
 
@@ -29,4 +30,6 @@ object HTTPCharacters {
     val SPACE_BYTE = SPACE.code.toByte()
     val HORIZONTAL_TAB_BYTE = HORIZONTAL_TAB.code.toByte()
     val QUOTE_BYTE = QUOTE.code.toByte()
+    val COLON_BYTE = COLON.code.toByte()
+    val COMMA_BYTE = COMMA.code.toByte()
 }
