@@ -1,7 +1,6 @@
-package dev.pellet.routing
+package dev.pellet.routing.http
 
 import dev.pellet.codec.http.HTTPMethod
-import dev.pellet.handler.PelletHTTPRouteHandling
 
 data class HTTPRoute(
     val method: HTTPMethod,

@@ -1,4 +1,4 @@
-package dev.pellet.routing
+package dev.pellet.routing.http
 
 import dev.pellet.codec.http.HTTPRequestMessage
 
