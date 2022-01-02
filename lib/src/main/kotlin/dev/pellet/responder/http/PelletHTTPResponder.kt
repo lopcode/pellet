@@ -14,79 +14,27 @@ import dev.pellet.codec.http.HTTPStatusLine
 class PelletHTTPResponder(
     private val client: PelletClient,
     private val pool: PelletBufferPooling
-) {
+) : PelletHTTPResponding {
 
-    suspend fun writeNoContent() {
-        val message = HTTPResponseMessage(
-            statusLine = HTTPStatusLine(
-                version = "HTTP/1.1",
-                statusCode = 204,
-                reasonPhrase = "No Content"
-            ),
-            headers = HTTPHeaders(),
-            entity = HTTPEntity.NoContent
-        )
+    override suspend fun respond(message: HTTPResponseMessage): Result<Unit> {
         val effectiveResponse = buildEffectiveResponse(message)
 
-        client.write(effectiveResponse, pool)
-    }
-
-    suspend fun writeNotFound() {
-        val message = HTTPResponseMessage(
-            statusLine = HTTPStatusLine(
-                version = "HTTP/1.1",
-                statusCode = 404,
-                reasonPhrase = "Not Found"
-            ),
-            headers = HTTPHeaders(),
-            entity = HTTPEntity.NoContent
-        )
-        val effectiveResponse = buildEffectiveResponse(message)
-        client.write(effectiveResponse, pool)
-    }
-
-    private fun buildEffectiveResponse(
-        original: HTTPResponseMessage
-    ): HTTPResponseMessage {
-        if (original.entity is HTTPEntity.Content) {
-            // todo: add content type
-            val effectiveResponse = original.copy(
-                headers = original.headers.add(
-                    HTTPHeader(
-                        HTTPHeaderConstants.contentLength,
-                        original.entity.buffer.limit().toString(10)
-                    )
-                )
-            )
-            return effectiveResponse
-        }
-
-        if (original.entity is HTTPEntity.NoContent && original.statusLine.statusCode != 204) {
-            val effectiveResponse = original.copy(
-                headers = original.headers.add(
-                    HTTPHeader(
-                        HTTPHeaderConstants.contentLength,
-                        "0"
-                    )
-                )
-            )
-            return effectiveResponse
-        }
-
-        return original
+        return client
+            .respond(effectiveResponse, pool)
+            .map { }
     }
 }
 
-private suspend fun PelletClient.write(
+private suspend fun PelletClient.respond(
     message: HTTPResponseMessage,
     pool: PelletBufferPooling
-) {
+): Result<Int> {
     val buffer = pool.provide()
         .appendStatusLine(message.statusLine)
         .appendHeaders(message.headers)
-        .appendEntity(message.entity)
+        .appendEntity(message.entity) // todo: good place for streaming/chunked entity logic
         .flip()
-    this.writeAndRelease(buffer)
+    return this.writeAndRelease(buffer)
 }
 
 private fun PelletBuffer.appendStatusLine(
@@ -132,4 +80,35 @@ private fun PelletBuffer.putCRLF(): PelletBuffer {
     return this
         .put(HTTPCharacters.CARRIAGE_RETURN_BYTE)
         .put(HTTPCharacters.LINE_FEED_BYTE)
+}
+
+private fun buildEffectiveResponse(
+    original: HTTPResponseMessage
+): HTTPResponseMessage {
+    if (original.entity is HTTPEntity.Content) {
+        // todo: add content type
+        val effectiveResponse = original.copy(
+            headers = original.headers.add(
+                HTTPHeader(
+                    HTTPHeaderConstants.contentLength,
+                    original.entity.buffer.limit().toString(10)
+                )
+            )
+        )
+        return effectiveResponse
+    }
+
+    if (original.entity is HTTPEntity.NoContent && original.statusLine.statusCode != 204) {
+        val effectiveResponse = original.copy(
+            headers = original.headers.add(
+                HTTPHeader(
+                    HTTPHeaderConstants.contentLength,
+                    "0"
+                )
+            )
+        )
+        return effectiveResponse
+    }
+
+    return original
 }

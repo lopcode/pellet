@@ -3,6 +3,7 @@ package dev.pellet.integration
 import dev.pellet.PelletBuilder.pelletServer
 import dev.pellet.PelletConnector
 import dev.pellet.logging.logger
+import dev.pellet.routing.http.HTTPRouteResponse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -43,9 +44,11 @@ class NoContentBenchmarkTest {
                     9001
                 )
                 router {
-                    get("/") { _, responder ->
+                    get("/") {
                         counter.decrementAndGet()
-                        responder.writeNoContent()
+                        HTTPRouteResponse.Builder()
+                            .noContent()
+                            .build()
                     }
                 }
             }

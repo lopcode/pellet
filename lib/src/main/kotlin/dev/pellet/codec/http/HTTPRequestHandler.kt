@@ -5,9 +5,10 @@ import dev.pellet.PelletClient
 import dev.pellet.buffer.PelletBufferPooling
 import dev.pellet.codec.CodecHandler
 import dev.pellet.logging.logger
-import dev.pellet.responder.http.PelletHTTPContext
 import dev.pellet.responder.http.PelletHTTPResponder
-import dev.pellet.routing.HTTPRouting
+import dev.pellet.responder.http.PelletHTTPRouteContext
+import dev.pellet.routing.http.HTTPRouteResponse
+import dev.pellet.routing.http.HTTPRouting
 
 internal class HTTPRequestHandler(
     private val client: PelletClient,
@@ -18,18 +19,29 @@ internal class HTTPRequestHandler(
     private val logger = logger<HTTPRequestHandler>()
 
     override suspend fun handle(output: HTTPRequestMessage) {
-        val context = PelletHTTPContext(output, client)
+        val context = PelletHTTPRouteContext(output, client)
         val responder = PelletHTTPResponder(client, pool)
         val route = router.route(output)
         if (route == null) {
-            responder.writeNotFound()
+            val response = HTTPRouteResponse.Builder()
+                .notFound()
+                .build()
+            val message = mapRouteResponseToMessage(response)
+            responder.respond(message)
         } else {
-            val handled = runCatching {
-                route.handler.handle(context, responder)
+            val routeResult = runCatching {
+                route.handler.handle(context)
             }
-            if (handled.isFailure) {
-                logger.error("failed to handle request", handled.exceptionOrNull())
+            if (routeResult.isFailure) {
+                logger.error("failed to handle request", routeResult.exceptionOrNull())
+                val response = HTTPRouteResponse.Builder()
+                    .internalServerError()
+                    .build()
+                val message = mapRouteResponseToMessage(response)
+                responder.respond(message)
             }
+            val message = mapRouteResponseToMessage(routeResult.getOrThrow())
+            responder.respond(message)
         }
 
         val connectionHeader = output.headers.getSingleOrNull(HTTPHeaderConstants.connection)
@@ -51,5 +63,27 @@ internal class HTTPRequestHandler(
         if (connectionHeader.rawValue.equals(HTTPHeaderConstants.close, ignoreCase = true)) {
             client.close(CloseReason.ServerInitiated)
         }
+    }
+
+    private fun mapRouteResponseToMessage(
+        routeResult: HTTPRouteResponse
+    ): HTTPResponseMessage {
+        return HTTPResponseMessage(
+            statusLine = HTTPStatusLine(
+                version = "HTTP/1.1",
+                statusCode = routeResult.statusCode,
+                reasonPhrase = mapCodeToReasonPhrase(routeResult.statusCode)
+            ),
+            headers = routeResult.headers,
+            entity = routeResult.entity
+        )
+    }
+
+    private fun mapCodeToReasonPhrase(code: Int) = when (code) {
+        200 -> "OK"
+        204 -> "No Content"
+        400 -> "Not Found"
+        500 -> "Internal Server Error"
+        else -> "Unknown"
     }
 }

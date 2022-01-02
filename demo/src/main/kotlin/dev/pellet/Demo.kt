@@ -3,8 +3,8 @@ package dev.pellet
 import dev.pellet.PelletBuilder.httpRouter
 import dev.pellet.PelletBuilder.pelletServer
 import dev.pellet.logging.logger
-import dev.pellet.responder.http.PelletHTTPContext
-import dev.pellet.responder.http.PelletHTTPResponder
+import dev.pellet.responder.http.PelletHTTPRouteContext
+import dev.pellet.routing.http.HTTPRouteResponse
 import kotlinx.coroutines.runBlocking
 
 object Demo
@@ -43,8 +43,11 @@ fun simpleMain() = runBlocking {
                 port = 8082
             )
             router {
-                get("/v1/hello") { _, responder ->
-                    responder.writeNoContent()
+                get("/v1/hello") {
+                    HTTPRouteResponse.Builder()
+                        .noContent()
+                        .header("X-Hello", "World")
+                        .build()
                 }
             }
         }
@@ -53,9 +56,12 @@ fun simpleMain() = runBlocking {
 }
 
 private suspend fun handleRequest(
-    context: PelletHTTPContext,
-    responder: PelletHTTPResponder
-) {
-    logger.debug("got request: ${context.message}")
-    responder.writeNoContent()
+    context: PelletHTTPRouteContext
+): HTTPRouteResponse {
+    logger.debug("got request: ${context.rawMessage}")
+
+    return HTTPRouteResponse.Builder()
+        .noContent()
+        .header("X-Hello", "World")
+        .build()
 }

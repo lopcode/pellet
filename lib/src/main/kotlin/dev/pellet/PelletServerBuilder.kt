@@ -1,9 +1,9 @@
 package dev.pellet
 
 import dev.pellet.codec.http.HTTPMethod
-import dev.pellet.handler.PelletHTTPRouteHandling
-import dev.pellet.routing.HTTPRoute
-import dev.pellet.routing.PelletHTTPRouter
+import dev.pellet.routing.http.HTTPRoute
+import dev.pellet.routing.http.PelletHTTPRouteHandling
+import dev.pellet.routing.http.PelletHTTPRouter
 
 @DslMarker
 @Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)

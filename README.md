@@ -1,26 +1,51 @@
 # Pellet
 
-An experimental Kotlin web framework, designed to be fast, lean, stable, and ergonomic.
+An opinionated Kotlin web framework, designed to be fast, lean, stable, and ergonomic.
 
-I wrote a blog post describing why I started this project, and what the design goals are: https://www.carrot.blog/posts/2021/11/building-pellet-introduction/
+This project is still in the prototyping phase, but you're welcome to pull it down and give it a try.
 
-If you're interested, please star the project or [sponsor me](https://github.com/sponsors/CarrotCodes) to let me know it's worth spending time on ⭐️
+I wrote a blog post describing why I started Pellet, and what the design goals are: https://www.carrot.blog/posts/2021/11/building-pellet-introduction/
 
-## Demo
+If you're interested, please star the project or [sponsor me](https://github.com/sponsors/CarrotCodes) ⭐️
 
-You can run the program in `Demo.kt` to start two connectors by default:
+## Examples
+
+Starting a simple server, with one HTTP connector, and one route handler at `GET /v1/hello`, which responds with a 204:
+
+```kotlin
+fun main() = runBlocking {
+    val pellet = pelletServer {
+        httpConnector {
+            endpoint = PelletConnector.Endpoint(
+                hostname = "localhost",
+                port = 8082
+            )
+            router {
+                get("/v1/hello") {
+                    HTTPRouteResponse.Builder()
+                        .noContent()
+                        .header("X-Hello", "World")
+                        .build()
+                }
+            }
+        }
+    }
+    pellet.start().join()
+}
+```
+
+Pellet will start up:
 ```
 [main] INFO dev.pellet.PelletServer - Pellet server starting...
 [main] INFO dev.pellet.PelletServer - Please support development at https://www.pellet.dev/support
 [main] INFO dev.pellet.PelletServer - Starting connectors:
 [main] INFO dev.pellet.PelletServer -   HTTP(hostname=localhost, port=8082)
-[main] INFO dev.pellet.PelletServer -   HTTP(hostname=localhost, port=8083)
 ```
 
-Then you can send requests with a tool like [httpie](https://httpie.io/):
+Then you can hit this endpoint locally using [httpie](https://httpie.io/):
 ```
-$ http -v localhost:8082/                 
-GET / HTTP/1.1
+🥕 carrot 🗂 ~/git/pellet $ http -v localhost:8082/v1/hello
+GET /v1/hello HTTP/1.1
 Accept: */*
 Accept-Encoding: gzip, deflate
 Connection: keep-alive
@@ -30,22 +55,10 @@ User-Agent: HTTPie/2.6.0
 
 
 HTTP/1.1 204 No Content
-
+x-hello: World
 ```
 
-Or run load tests locally using [hey](https://github.com/rakyll/hey):
-```
-$ hey -z 20s http://localhost:8083
-
-Summary:
-  Total:	20.0007 secs
-  Slowest:	0.0903 secs
-  Fastest:	0.0000 secs
-  Average:	0.0010 secs
-  Requests/sec:	103331.5273
-  
-...
-```
+You can find more examples in the `demo` subproject.
 
 # License
 
