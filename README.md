@@ -56,7 +56,7 @@ User-Agent: HTTPie/2.6.0
 
 
 HTTP/1.1 204 No Content
-x-hello: World
+X-Hello: World
 ```
 
 You can find more examples in the `demo` subproject.
