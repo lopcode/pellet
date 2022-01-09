@@ -4,5 +4,6 @@ import dev.pellet.codec.http.HTTPRequestMessage
 
 interface HTTPRouting {
 
-    fun route(message: HTTPRequestMessage): HTTPRoute?
+    fun add(route: PelletHTTPRoute)
+    fun route(message: HTTPRequestMessage): PelletHTTPRoute?
 }

@@ -82,7 +82,7 @@ internal class HTTPRequestHandler(
     private fun mapCodeToReasonPhrase(code: Int) = when (code) {
         200 -> "OK"
         204 -> "No Content"
-        400 -> "Not Found"
+        404 -> "Not Found"
         500 -> "Internal Server Error"
         else -> "Unknown"
     }

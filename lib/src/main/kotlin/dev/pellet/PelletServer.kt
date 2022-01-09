@@ -43,16 +43,7 @@ class PelletServer(
 
         val connectorJobs = connectors.map {
             when (it) {
-                is PelletConnector.HTTP -> {
-                    val connectorAddress = InetSocketAddress(it.endpoint.hostname, it.endpoint.port)
-                    // todo: validate routes
-                    val connector = SocketConnector(scope, connectorAddress, writePool) { client ->
-                        val output = HTTPRequestHandler(client, it.router, writePool)
-                        val codec = HTTPMessageCodec(output, readPool)
-                        codec
-                    }
-                    connector.createAcceptJob()
-                }
+                is PelletConnector.HTTP -> createHTTPConnectorJob(it, scope)
             }
         }
 
@@ -65,5 +56,18 @@ class PelletServer(
         }
 
         return context
+    }
+
+    private fun createHTTPConnectorJob(
+        it: PelletConnector.HTTP,
+        scope: CoroutineScope
+    ): Job {
+        val connectorAddress = InetSocketAddress(it.endpoint.hostname, it.endpoint.port)
+        val connector = SocketConnector(scope, connectorAddress, writePool) { client ->
+            val output = HTTPRequestHandler(client, it.router, writePool)
+            val codec = HTTPMessageCodec(output, readPool)
+            codec
+        }
+        return connector.createAcceptJob()
     }
 }
