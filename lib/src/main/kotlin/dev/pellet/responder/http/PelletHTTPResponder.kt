@@ -53,7 +53,10 @@ private fun PelletBuffer.appendHeaders(
     headers: HTTPHeaders
 ): PelletBuffer {
     headers.forEach { key, values ->
-        this.put(key.toByteArray(Charsets.US_ASCII))
+        // todo: what happens when different values have different cased keys?
+        // for now - choose the first one
+        val headerName = values.firstOrNull()?.rawName ?: key
+        this.put(headerName.toByteArray(Charsets.US_ASCII))
             .put(HTTPCharacters.COLON_BYTE)
             .put(HTTPCharacters.SPACE_BYTE)
             // todo: figure out value encoding
