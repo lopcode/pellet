@@ -4,7 +4,7 @@ import dev.pellet.codec.http.HTTPRequestMessage
 
 class PelletHTTPRouter : HTTPRouting {
 
-    private val routes = mutableListOf<PelletHTTPRoute>()
+    override val routes = mutableListOf<PelletHTTPRoute>()
 
     override fun add(route: PelletHTTPRoute) {
         routes.add(route)

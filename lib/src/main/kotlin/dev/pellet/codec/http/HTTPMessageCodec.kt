@@ -373,18 +373,9 @@ internal class HTTPMessageCodec(
             return Result.failure(RuntimeException("malformed version"))
         }
 
-        val httpMethod = when (method.lowercase(Locale.ENGLISH)) {
-            "get" -> HTTPMethod.Get
-            "post" -> HTTPMethod.Post
-            "put" -> HTTPMethod.Put
-            "patch" -> HTTPMethod.Patch
-            "delete" -> HTTPMethod.Delete
-            "head" -> HTTPMethod.Head
-            "connect" -> HTTPMethod.Connect
-            "options" -> HTTPMethod.Options
-            "trace" -> HTTPMethod.Trace
-            else -> HTTPMethod.Custom(method)
-        }
+        val httpMethod = defaultMethods.firstOrNull {
+            it.rawMethod == method.uppercase(Locale.ENGLISH)
+        } ?: HTTPMethod.Custom(method)
 
         return Result.success(
             HTTPRequestLine(
