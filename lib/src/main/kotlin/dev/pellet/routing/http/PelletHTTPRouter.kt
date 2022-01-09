@@ -2,16 +2,20 @@ package dev.pellet.routing.http
 
 import dev.pellet.codec.http.HTTPRequestMessage
 
-class PelletHTTPRouter(
-    private val routes: List<HTTPRoute>
-) : HTTPRouting {
+class PelletHTTPRouter : HTTPRouting {
+
+    override val routes = mutableListOf<PelletHTTPRoute>()
+
+    override fun add(route: PelletHTTPRoute) {
+        routes.add(route)
+    }
 
     override fun route(
         message: HTTPRequestMessage
-    ): HTTPRoute? {
-        // todo: evaluate route paths properly and cache result
+    ): PelletHTTPRoute? {
+        // todo: investigate if route matching can be better than O(n)
         return routes.firstOrNull {
-            it.method == message.requestLine.method && it.path == message.requestLine.resourceUri
+            it.method == message.requestLine.method && message.requestLine.resourceUri == it.uri
         }
     }
 }

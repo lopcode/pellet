@@ -9,6 +9,8 @@ import dev.pellet.extension.stringifyAndClear
 import dev.pellet.extension.trimLWS
 import dev.pellet.extension.trimTrailing
 import dev.pellet.logging.logger
+import java.lang.IllegalArgumentException
+import java.net.URI
 import java.util.Locale
 import kotlin.math.min
 
@@ -349,15 +351,21 @@ internal class HTTPMessageCodec(
             return Result.failure(RuntimeException("expected request line to have 3 parts"))
         }
 
-        val (method, resourceUri, httpVersion) = split
+        val (method, rawResourceURI, httpVersion) = split
         // todo: verify method is a "token" entity
         if (method.isEmpty()) {
             return Result.failure(RuntimeException("malformed method"))
         }
 
         // todo: verify uri is ""*" | absoluteURI | abs_path | authority"
-        if (resourceUri.isEmpty()) {
-            return Result.failure(RuntimeException("malformed method"))
+        if (rawResourceURI.isEmpty()) {
+            return Result.failure(RuntimeException("malformed raw uri"))
+        }
+
+        val resourceURI = try {
+            URI.create(rawResourceURI)
+        } catch (exception: IllegalArgumentException) {
+            return Result.failure(RuntimeException("malformed uri"))
         }
 
         // todo: verify version is ""HTTP" "/" 1*DIGIT "." 1*DIGIT"
@@ -365,23 +373,14 @@ internal class HTTPMessageCodec(
             return Result.failure(RuntimeException("malformed version"))
         }
 
-        val httpMethod = when (method.lowercase(Locale.ENGLISH)) {
-            "get" -> HTTPMethod.Get
-            "post" -> HTTPMethod.Post
-            "put" -> HTTPMethod.Put
-            "patch" -> HTTPMethod.Patch
-            "delete" -> HTTPMethod.Delete
-            "head" -> HTTPMethod.Head
-            "connect" -> HTTPMethod.Connect
-            "options" -> HTTPMethod.Options
-            "trace" -> HTTPMethod.Trace
-            else -> HTTPMethod.Custom(method)
-        }
+        val httpMethod = defaultMethods.firstOrNull {
+            it.rawMethod == method.uppercase(Locale.ENGLISH)
+        } ?: HTTPMethod.Custom(method)
 
         return Result.success(
             HTTPRequestLine(
                 method = httpMethod,
-                resourceUri = resourceUri,
+                resourceUri = resourceURI,
                 httpVersion = httpVersion
             )
         )

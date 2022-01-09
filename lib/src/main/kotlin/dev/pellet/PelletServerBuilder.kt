@@ -1,9 +1,10 @@
 package dev.pellet
 
 import dev.pellet.codec.http.HTTPMethod
-import dev.pellet.routing.http.HTTPRoute
+import dev.pellet.routing.http.PelletHTTPRoute
 import dev.pellet.routing.http.PelletHTTPRouteHandling
 import dev.pellet.routing.http.PelletHTTPRouter
+import java.net.URI
 
 @DslMarker
 @Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
@@ -25,26 +26,27 @@ object PelletBuilder {
     ): PelletHTTPRouter {
         val builder = RouterBuilder()
         lambda(builder)
-        val routes = builder.build()
-        return PelletHTTPRouter(routes)
+        return builder.build()
     }
 }
 
 @PelletBuilderDslTag
 class RouterBuilder {
 
-    val routes = mutableListOf<HTTPRoute>()
+    private val router = PelletHTTPRouter()
 
     fun get(path: String, handler: PelletHTTPRouteHandling) {
-        routes.add(HTTPRoute(HTTPMethod.Get, path, handler))
+        val uri = URI.create(path)
+        router.add(PelletHTTPRoute(HTTPMethod.Get, uri, handler))
     }
 
     fun post(path: String, handler: PelletHTTPRouteHandling) {
-        routes.add(HTTPRoute(HTTPMethod.Post, path, handler))
+        val uri = URI.create(path)
+        router.add(PelletHTTPRoute(HTTPMethod.Post, uri, handler))
     }
 
-    internal fun build(): List<HTTPRoute> {
-        return routes
+    internal fun build(): PelletHTTPRouter {
+        return router
     }
 }
 
@@ -73,8 +75,7 @@ class HTTPConnectorBuilder {
     fun router(lambda: (@PelletBuilderDslTag RouterBuilder).() -> Unit) {
         val builder = RouterBuilder()
         lambda(builder)
-        val routes = builder.build()
-        router = PelletHTTPRouter(routes)
+        router = builder.build()
     }
 
     internal fun build(): PelletConnector {

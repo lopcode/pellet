@@ -5,6 +5,7 @@ import dev.pellet.codec.http.HTTPMessageCodec
 import dev.pellet.codec.http.HTTPRequestHandler
 import dev.pellet.connector.SocketConnector
 import dev.pellet.logging.logger
+import dev.pellet.routing.http.HTTPRouting
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -36,23 +37,9 @@ class PelletServer(
                 get() = dispatcher + context
         }
 
-        logger.info("Starting connectors:")
-        connectors.forEach {
-            logger.info("  $it")
-        }
-
         val connectorJobs = connectors.map {
             when (it) {
-                is PelletConnector.HTTP -> {
-                    val connectorAddress = InetSocketAddress(it.endpoint.hostname, it.endpoint.port)
-                    // todo: validate routes
-                    val connector = SocketConnector(scope, connectorAddress, writePool) { client ->
-                        val output = HTTPRequestHandler(client, it.router, writePool)
-                        val codec = HTTPMessageCodec(output, readPool)
-                        codec
-                    }
-                    connector.createAcceptJob()
-                }
+                is PelletConnector.HTTP -> createHTTPConnectorJob(it, scope)
             }
         }
 
@@ -65,5 +52,30 @@ class PelletServer(
         }
 
         return context
+    }
+
+    private fun createHTTPConnectorJob(
+        spec: PelletConnector.HTTP,
+        scope: CoroutineScope
+    ): Job {
+        logger.info("Starting connector: $spec")
+        validateAndPrintRoutes(spec.router)
+        val connectorAddress = InetSocketAddress(spec.endpoint.hostname, spec.endpoint.port)
+        val connector = SocketConnector(scope, connectorAddress, writePool) { client ->
+            val output = HTTPRequestHandler(client, spec.router, writePool)
+            val codec = HTTPMessageCodec(output, readPool)
+            codec
+        }
+        return connector.createAcceptJob()
+    }
+
+    private fun validateAndPrintRoutes(router: HTTPRouting) {
+        if (router.routes.isEmpty()) {
+            throw RuntimeException("routes must be defined before starting a connector")
+        }
+        logger.info(" Routes:")
+        router.routes.forEach {
+            logger.info("  $it")
+        }
     }
 }

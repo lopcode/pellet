@@ -38,8 +38,9 @@ Pellet will start up:
 ```
 [main] INFO dev.pellet.PelletServer - Pellet server starting...
 [main] INFO dev.pellet.PelletServer - Please support development at https://www.pellet.dev/support
-[main] INFO dev.pellet.PelletServer - Starting connectors:
-[main] INFO dev.pellet.PelletServer -   HTTP(hostname=localhost, port=8082)
+[main] INFO dev.pellet.PelletServer - Starting connector: HTTP(hostname=localhost, port=8082)
+[main] INFO dev.pellet.PelletServer -  Routes:
+[main] INFO dev.pellet.PelletServer -   PelletHTTPRoute(method=GET, uri=/v1/hello, handler=dev.pellet.DemoKt$main$1$pellet$1$1$1$1@ea4a92b)
 ```
 
 Then you can hit this endpoint locally using [httpie](https://httpie.io/):
