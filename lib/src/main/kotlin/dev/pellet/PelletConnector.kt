@@ -10,7 +10,7 @@ sealed class PelletConnector {
     ) : PelletConnector() {
 
         override fun toString(): String {
-            return "HTTP(hostname=${endpoint.hostname}, port=${endpoint.port})"
+            return "HTTP(hostname=${endpoint.hostname}, port=${endpoint.port}, router=$router)"
         }
     }
 

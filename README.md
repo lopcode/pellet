@@ -2,11 +2,13 @@
 
 An opinionated Kotlin web framework, designed to be fast, lean, stable, and ergonomic.
 
+Pellet handles a huge number of requests per second, has a tiny dependency graph (`kotlin-stdlib`, `kotlinx-coroutines`, and `slf4j-api`), and offers approximately one way of doing things.
+
 This project is still in the prototyping phase, but you're welcome to pull it down and give it a try.
 
-I wrote a blog post describing why I started Pellet, and what the design goals are: https://www.carrot.blog/posts/2021/11/building-pellet-introduction/
+I write about building Pellet in a series on my blog: https://www.carrot.blog/series/pellet/
 
-If you're interested, please star the project or [sponsor me](https://github.com/sponsors/CarrotCodes) ⭐️
+If you're interested, please star the repo, or [support my work](https://www.pellet.dev/support) ⭐️
 
 ## Examples
 
@@ -41,6 +43,7 @@ Pellet will start up:
 [main] INFO dev.pellet.PelletServer - Starting connector: HTTP(hostname=localhost, port=8082)
 [main] INFO dev.pellet.PelletServer -  Routes:
 [main] INFO dev.pellet.PelletServer -   PelletHTTPRoute(method=GET, uri=/v1/hello, handler=dev.pellet.DemoKt$main$1$pellet$1$1$1$1@ea4a92b)
+[main] INFO dev.pellet.PelletServer - Pellet started in 16ms
 ```
 
 Then you can hit this endpoint locally using [httpie](https://httpie.io/):
@@ -72,7 +75,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,

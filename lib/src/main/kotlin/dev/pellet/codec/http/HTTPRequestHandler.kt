@@ -5,6 +5,7 @@ import dev.pellet.PelletClient
 import dev.pellet.buffer.PelletBufferPooling
 import dev.pellet.codec.CodecHandler
 import dev.pellet.logging.logger
+import dev.pellet.metrics.PelletTimer
 import dev.pellet.responder.http.PelletHTTPResponder
 import dev.pellet.responder.http.PelletHTTPRouteContext
 import dev.pellet.routing.http.HTTPRouteResponse
@@ -16,9 +17,11 @@ internal class HTTPRequestHandler(
     private val pool: PelletBufferPooling
 ) : CodecHandler<HTTPRequestMessage> {
 
+    private val timer = PelletTimer()
     private val logger = logger<HTTPRequestHandler>()
 
     override suspend fun handle(output: HTTPRequestMessage) {
+        timer.reset()
         val context = PelletHTTPRouteContext(output, client)
         val responder = PelletHTTPResponder(client, pool)
         val route = router.route(output)
@@ -46,8 +49,10 @@ internal class HTTPRequestHandler(
 
         val connectionHeader = output.headers.getSingleOrNull(HTTPHeaderConstants.connection)
         handleConnectionHeader(connectionHeader)
-
         output.release(pool)
+
+        // todo: track request durations
+        val requestDuration = timer.markAndReset()
     }
 
     private fun handleConnectionHeader(connectionHeader: HTTPHeader?) {

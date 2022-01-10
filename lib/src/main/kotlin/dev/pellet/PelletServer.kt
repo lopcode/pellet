@@ -5,6 +5,7 @@ import dev.pellet.codec.http.HTTPMessageCodec
 import dev.pellet.codec.http.HTTPRequestHandler
 import dev.pellet.connector.SocketConnector
 import dev.pellet.logging.logger
+import dev.pellet.metrics.PelletTimer
 import dev.pellet.routing.http.HTTPRouting
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +27,8 @@ class PelletServer(
         if (connectors.isEmpty()) {
             throw RuntimeException("Please define at least one connector")
         }
+
+        val startupTimer = PelletTimer()
 
         logger.info("Pellet server starting...")
         logger.info("Please support development at https://www.pellet.dev/support")
@@ -50,6 +53,10 @@ class PelletServer(
         context.invokeOnCompletion {
             logger.info("Pellet server stopped", it)
         }
+
+        val startupDuration = startupTimer.markAndReset()
+        val startupMs = startupDuration.toMillis()
+        logger.info("Pellet started in ${startupMs}ms")
 
         return context
     }
