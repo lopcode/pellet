@@ -4,10 +4,12 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonPrimitive
 import org.slf4j.MDC
 import org.slf4j.event.Level
 import org.slf4j.helpers.MarkerIgnoringBase
 import org.slf4j.helpers.MessageFormatter
+import java.time.Instant
 
 public class PelletStructuredLogger(
     name: String,
@@ -21,6 +23,7 @@ public class PelletStructuredLogger(
         private const val messageKey = "message"
         private const val throwableKey = "throwable"
         private const val threadKey = "thread"
+        private const val timestampKey = "timestamp"
         private val encoder = Json
     }
 
@@ -259,8 +262,10 @@ public class PelletStructuredLogger(
         message: String?,
         elements: PelletLoggingElements?
     ) {
+        val timestamp = encoder.encodeToJsonElement(InstantDateTimeSerializer, Instant.now())
         val map = mutableMapOf(
             levelKey to JsonPrimitive(level.toString().lowercase()),
+            timestampKey to timestamp.jsonPrimitive,
             messageKey to JsonPrimitive(message),
             nameKey to JsonPrimitive(name),
             threadKey to JsonPrimitive(Thread.currentThread().name)

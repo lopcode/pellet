@@ -38,13 +38,13 @@ fun main() = runBlocking {
 
 Pellet will start up:
 ```
-{"level":"info","message":"Pellet server starting...","name":"dev.pellet.server.PelletServer","thread":"main"}
-{"level":"info","message":"Get help, give feedback, and support development at https://www.pellet.dev","name":"dev.pellet.server.PelletServer","thread":"main"}
-{"level":"info","message":"Starting connector: HTTP(hostname=localhost, port=8082, router=dev.pellet.server.routing.http.PelletHTTPRouter@19976a65)","name":"dev.pellet.server.PelletServer","thread":"main"}
-{"level":"info","message":"Routes: \nPelletHTTPRoute(method=GET, uri=/, handler=dev.pellet.demo.DemoKt$main$1$sharedRouter$1$1@80e75f5d)\nPelletHTTPRoute(method=POST, uri=/v1/hello, handler=dev.pellet.demo.DemoKt$main$1$sharedRouter$1$2@80e75f5d)","name":"dev.pellet.server.PelletServer","thread":"main"}
-{"level":"info","message":"Starting connector: HTTP(hostname=localhost, port=8083, router=dev.pellet.server.routing.http.PelletHTTPRouter@19976a65)","name":"dev.pellet.server.PelletServer","thread":"main"}
-{"level":"info","message":"Routes: \nPelletHTTPRoute(method=GET, uri=/, handler=dev.pellet.demo.DemoKt$main$1$sharedRouter$1$1@80e75f5d)\nPelletHTTPRoute(method=POST, uri=/v1/hello, handler=dev.pellet.demo.DemoKt$main$1$sharedRouter$1$2@80e75f5d)","name":"dev.pellet.server.PelletServer","thread":"main"}
-{"level":"info","message":"Pellet started in 134ms","name":"dev.pellet.server.PelletServer","thread":"main"}
+{"level":"info","timestamp":"2022-02-27T22:23:38.653728Z","message":"Pellet server starting...","name":"dev.pellet.server.PelletServer","thread":"main"}
+{"level":"info","timestamp":"2022-02-27T22:23:38.748977Z","message":"Get help, give feedback, and support development at https://www.pellet.dev","name":"dev.pellet.server.PelletServer","thread":"main"}
+{"level":"info","timestamp":"2022-02-27T22:23:38.749632Z","message":"Starting connector: HTTP(hostname=localhost, port=8082, router=dev.pellet.server.routing.http.PelletHTTPRouter@189cbd7c)","name":"dev.pellet.server.PelletServer","thread":"main"}
+{"level":"info","timestamp":"2022-02-27T22:23:38.750098Z","message":"Routes: \nPelletHTTPRoute(method=GET, uri=/, handler=dev.pellet.demo.DemoKt$main$1$sharedRouter$1$1@80e75f5d)\nPelletHTTPRoute(method=POST, uri=/v1/hello, handler=dev.pellet.demo.DemoKt$main$1$sharedRouter$1$2@80e75f5d)","name":"dev.pellet.server.PelletServer","thread":"main"}
+{"level":"info","timestamp":"2022-02-27T22:23:38.759513Z","message":"Starting connector: HTTP(hostname=localhost, port=8083, router=dev.pellet.server.routing.http.PelletHTTPRouter@189cbd7c)","name":"dev.pellet.server.PelletServer","thread":"main"}
+{"level":"info","timestamp":"2022-02-27T22:23:38.759684Z","message":"Routes: \nPelletHTTPRoute(method=GET, uri=/, handler=dev.pellet.demo.DemoKt$main$1$sharedRouter$1$1@80e75f5d)\nPelletHTTPRoute(method=POST, uri=/v1/hello, handler=dev.pellet.demo.DemoKt$main$1$sharedRouter$1$2@80e75f5d)","name":"dev.pellet.server.PelletServer","thread":"main"}
+{"level":"info","timestamp":"2022-02-27T22:23:38.762581Z","message":"Pellet started in 145ms","name":"dev.pellet.server.PelletServer","thread":"main"}
 ```
 
 Then you can hit this endpoint locally using [httpie](https://httpie.io/):
