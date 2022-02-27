@@ -1,3 +1,4 @@
 rootProject.name = "pellet"
-include("lib")
+include("server")
+include("structured-logger")
 include("demo")

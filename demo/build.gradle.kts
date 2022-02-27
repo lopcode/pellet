@@ -10,14 +10,15 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":lib"))
-    implementation("org.slf4j:slf4j-simple:1.7.32")
+    implementation(project(":server"))
+    implementation(project(":structured-logger"))
+    implementation("org.slf4j:slf4j-simple:1.7.35")
 
-    implementation("io.ktor:ktor-server-core:1.6.6")
-    implementation("io.ktor:ktor-server-netty:1.6.6")
+    implementation("io.ktor:ktor-server-core:1.6.7")
+    implementation("io.ktor:ktor-server-netty:1.6.7")
 
-    implementation("io.jooby:jooby:2.11.0")
-    implementation("io.jooby:jooby-netty:2.11.0")
+    implementation("io.jooby:jooby:2.13.0")
+    implementation("io.jooby:jooby-netty:2.13.0")
 }
 
 application {

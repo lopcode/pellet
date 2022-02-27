@@ -2,7 +2,7 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 
 plugins {
-    kotlin("jvm") version "1.6.0"
+    kotlin("jvm") version "1.6.10"
     id("org.jlleitschuh.gradle.ktlint") version "10.2.0"
 }
 
@@ -39,10 +39,9 @@ subprojects {
     dependencies {
         implementation(platform(kotlin("bom")))
         implementation(kotlin("stdlib-jdk8"))
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0-RC")
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.6.0-RC")
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.6.0")
         implementation("org.slf4j:slf4j-api:1.7.32")
-        runtimeOnly("org.slf4j:slf4j-simple:1.7.32")
 
         testImplementation(kotlin("test"))
         testImplementation(kotlin("test-junit"))
