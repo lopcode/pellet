@@ -1,12 +1,14 @@
 # Pellet
 
-An opinionated Kotlin web framework, designed to be fast, lean, stable, and ergonomic.
+An opinionated Kotlin web framework, with best-practices built-in.
+
+Pellet handles a huge number of requests per second, has a tiny dependency graph (`kotlin-stdlib`, `kotlinx-coroutines`, and `slf4j-api`), and offers approximately one way of doing things.
 
 This project is still in the prototyping phase, but you're welcome to pull it down and give it a try.
 
-I wrote a blog post describing why I started Pellet, and what the design goals are: https://www.carrot.blog/posts/2021/11/building-pellet-introduction/
+I write about building Pellet in a series on my blog: https://www.carrot.blog/series/pellet/
 
-If you're interested, please star the project or [sponsor me](https://github.com/sponsors/CarrotCodes) ⭐️
+You can support my work by sponsoring [on Patreon](https://www.patreon.com/carrotcodes) or [GitHub Sponsors](https://www.github.com/sponsors/carrotcodes) ⭐️
 
 ## Examples
 
@@ -36,11 +38,13 @@ fun main() = runBlocking {
 
 Pellet will start up:
 ```
-[main] INFO dev.pellet.PelletServer - Pellet server starting...
-[main] INFO dev.pellet.PelletServer - Please support development at https://www.pellet.dev/support
-[main] INFO dev.pellet.PelletServer - Starting connector: HTTP(hostname=localhost, port=8082)
-[main] INFO dev.pellet.PelletServer -  Routes:
-[main] INFO dev.pellet.PelletServer -   PelletHTTPRoute(method=GET, uri=/v1/hello, handler=dev.pellet.DemoKt$main$1$pellet$1$1$1$1@ea4a92b)
+{"level":"info","message":"Pellet server starting...","name":"dev.pellet.server.PelletServer","thread":"main"}
+{"level":"info","message":"Get help, give feedback, and support development at https://www.pellet.dev","name":"dev.pellet.server.PelletServer","thread":"main"}
+{"level":"info","message":"Starting connector: HTTP(hostname=localhost, port=8082, router=dev.pellet.server.routing.http.PelletHTTPRouter@19976a65)","name":"dev.pellet.server.PelletServer","thread":"main"}
+{"level":"info","message":"Routes: \nPelletHTTPRoute(method=GET, uri=/, handler=dev.pellet.demo.DemoKt$main$1$sharedRouter$1$1@80e75f5d)\nPelletHTTPRoute(method=POST, uri=/v1/hello, handler=dev.pellet.demo.DemoKt$main$1$sharedRouter$1$2@80e75f5d)","name":"dev.pellet.server.PelletServer","thread":"main"}
+{"level":"info","message":"Starting connector: HTTP(hostname=localhost, port=8083, router=dev.pellet.server.routing.http.PelletHTTPRouter@19976a65)","name":"dev.pellet.server.PelletServer","thread":"main"}
+{"level":"info","message":"Routes: \nPelletHTTPRoute(method=GET, uri=/, handler=dev.pellet.demo.DemoKt$main$1$sharedRouter$1$1@80e75f5d)\nPelletHTTPRoute(method=POST, uri=/v1/hello, handler=dev.pellet.demo.DemoKt$main$1$sharedRouter$1$2@80e75f5d)","name":"dev.pellet.server.PelletServer","thread":"main"}
+{"level":"info","message":"Pellet started in 134ms","name":"dev.pellet.server.PelletServer","thread":"main"}
 ```
 
 Then you can hit this endpoint locally using [httpie](https://httpie.io/):
@@ -66,13 +70,13 @@ You can find more examples in the `demo` subproject.
 This work is, unless otherwise stated, licensed under the Apache License, Version 2.0.
 
 ```
-Copyright 2021 CarrotCodes
+Copyright 2021-2022 CarrotCodes
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       https://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
