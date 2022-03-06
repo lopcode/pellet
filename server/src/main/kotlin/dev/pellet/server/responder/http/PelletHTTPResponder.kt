@@ -1,5 +1,6 @@
 package dev.pellet.server.responder.http
 
+import dev.pellet.logging.pelletLogger
 import dev.pellet.server.PelletServerClient
 import dev.pellet.server.buffer.PelletBuffer
 import dev.pellet.server.buffer.PelletBufferPooling
@@ -16,9 +17,10 @@ class PelletHTTPResponder(
     private val pool: PelletBufferPooling
 ) : PelletHTTPResponding {
 
+    private val logger = pelletLogger<PelletHTTPResponder>()
+
     override suspend fun respond(message: HTTPResponseMessage): Result<Unit> {
         val effectiveResponse = buildEffectiveResponse(message)
-
         return client
             .respond(effectiveResponse, pool)
             .map { }

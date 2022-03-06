@@ -16,6 +16,7 @@ fun main() = runBlocking {
     val sharedRouter = httpRouter {
         get("/", ::handleRequest)
         post("/v1/hello", ::handleRequest)
+        get("/v1/error", ::handleForceError)
     }
     val pellet = pelletServer {
         httpConnector {
@@ -59,10 +60,16 @@ fun simpleMain() = runBlocking {
 private suspend fun handleRequest(
     context: PelletHTTPRouteContext
 ): HTTPRouteResponse {
-    logger.debug("got request: ${context.rawMessage}")
+    logger.debug { "got request: ${context.rawMessage}" }
 
     return HTTPRouteResponse.Builder()
         .noContent()
         .header("X-Hello", "World")
         .build()
+}
+
+private suspend fun handleForceError(
+    context: PelletHTTPRouteContext
+): HTTPRouteResponse {
+    throw RuntimeException("intentional error")
 }

@@ -53,6 +53,7 @@ class RouterBuilder {
 @PelletBuilderDslTag
 class PelletServerBuilder {
 
+    var logRequests: Boolean = true
     val connectors = mutableListOf<PelletConnector>()
 
     fun httpConnector(lambda: (@PelletBuilderDslTag HTTPConnectorBuilder).() -> Unit) {
@@ -62,7 +63,7 @@ class PelletServerBuilder {
     }
 
     internal fun build(): PelletServer {
-        return PelletServer(connectors)
+        return PelletServer(logRequests, connectors)
     }
 }
 

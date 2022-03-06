@@ -15,6 +15,7 @@ import java.net.InetSocketAddress
 import kotlin.coroutines.CoroutineContext
 
 class PelletServer(
+    private val logRequests: Boolean,
     private val connectors: List<PelletConnector>
 ) {
 
@@ -29,8 +30,8 @@ class PelletServer(
 
         val startupTimer = PelletTimer()
 
-        logger.info("Pellet server starting...")
-        logger.info("Get help, give feedback, and support development at https://www.pellet.dev")
+        logger.info { "Pellet server starting..." }
+        logger.info { "Get help, give feedback, and support development at https://www.pellet.dev" }
 
         val dispatcher = Dispatchers.Default
         val context = SupervisorJob()
@@ -50,12 +51,12 @@ class PelletServer(
         }
 
         context.invokeOnCompletion {
-            logger.info("Pellet server stopped", it)
+            logger.info(it) { "Pellet server stopped" }
         }
 
         val startupDuration = startupTimer.markAndReset()
         val startupMs = startupDuration.toMillis()
-        logger.info("Pellet started in ${startupMs}ms")
+        logger.info { "Pellet started in ${startupMs}ms" }
 
         return context
     }
@@ -64,11 +65,11 @@ class PelletServer(
         spec: PelletConnector.HTTP,
         scope: CoroutineScope
     ): Job {
-        logger.info("Starting connector: $spec")
+        logger.info { "Starting connector: $spec" }
         validateAndPrintRoutes(spec.router)
         val connectorAddress = InetSocketAddress(spec.endpoint.hostname, spec.endpoint.port)
         val connector = SocketConnector(scope, connectorAddress, writePool) { client ->
-            val output = HTTPRequestHandler(client, spec.router, writePool)
+            val output = HTTPRequestHandler(client, spec.router, writePool, logRequests)
             val codec = HTTPMessageCodec(output, readPool)
             codec
         }
@@ -79,6 +80,6 @@ class PelletServer(
         if (router.routes.isEmpty()) {
             throw RuntimeException("routes must be defined before starting a connector")
         }
-        logger.info("Routes: \n${router.routes.joinToString("\n")}")
+        logger.info { "Routes: \n${router.routes.joinToString("\n")}" }
     }
 }

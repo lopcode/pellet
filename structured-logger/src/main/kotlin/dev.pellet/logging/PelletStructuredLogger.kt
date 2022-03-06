@@ -2,19 +2,18 @@ package dev.pellet.logging
 
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
 import org.slf4j.MDC
-import org.slf4j.event.Level
-import org.slf4j.helpers.MarkerIgnoringBase
-import org.slf4j.helpers.MessageFormatter
 import java.time.Instant
 
-public class PelletStructuredLogger(
-    name: String,
-    private val level: Level
-) : MarkerIgnoringBase(), PelletLogging {
+class PelletStructuredLogger(
+    private val name: String,
+    private val levelProvider: () -> PelletLogLevel
+) : PelletLogging {
 
     companion object {
 
@@ -27,243 +26,80 @@ public class PelletStructuredLogger(
         private val encoder = Json
     }
 
-    init {
-        this.name = name
+    override fun error(elements: PelletLogElements?, messageBuilder: () -> String) {
+        log(PelletLogLevel.ERROR, elements, messageBuilder)
     }
 
-    override fun isTraceEnabled(): Boolean {
-        return level >= Level.TRACE
+    override fun error(throwable: Throwable?, elements: PelletLogElements?, messageBuilder: () -> String) {
+        log(PelletLogLevel.ERROR, throwable, elements, messageBuilder)
     }
 
-    override fun trace(msg: String?) {
-        if (!isTraceEnabled) {
-            return
-        }
-        logStructured(Level.TRACE, msg, elements = null)
+    override fun warn(elements: PelletLogElements?, messageBuilder: () -> String) {
+        log(PelletLogLevel.WARN, elements, messageBuilder)
     }
 
-    override fun trace(format: String?, arg: Any?) {
-        if (!isTraceEnabled) {
-            return
-        }
-        val formattingTuple = MessageFormatter.format(format, arg)
-        logStructured(Level.TRACE, formattingTuple.message, formattingTuple.throwable)
+    override fun warn(throwable: Throwable?, elements: PelletLogElements?, messageBuilder: () -> String) {
+        log(PelletLogLevel.WARN, throwable, elements, messageBuilder)
     }
 
-    override fun trace(format: String?, arg1: Any?, arg2: Any?) {
-        if (!isTraceEnabled) {
-            return
-        }
-        val formattingTuple = MessageFormatter.format(format, arg1, arg2)
-        logStructured(Level.TRACE, formattingTuple.message, formattingTuple.throwable)
+    override fun info(elements: PelletLogElements?, messageBuilder: () -> String) {
+        log(PelletLogLevel.INFO, elements, messageBuilder)
     }
 
-    override fun trace(format: String?, vararg arguments: Any?) {
-        if (!isTraceEnabled) {
-            return
-        }
-        val formattingTuple = MessageFormatter.format(format, arguments)
-        logStructured(Level.TRACE, formattingTuple.message, formattingTuple.throwable)
+    override fun info(throwable: Throwable?, elements: PelletLogElements?, messageBuilder: () -> String) {
+        log(PelletLogLevel.INFO, throwable, elements, messageBuilder)
     }
 
-    override fun trace(msg: String?, t: Throwable?) {
-        if (!isTraceEnabled) {
-            return
-        }
-        logStructured(Level.TRACE, msg, t)
+    override fun debug(elements: PelletLogElements?, messageBuilder: () -> String) {
+        log(PelletLogLevel.DEBUG, elements, messageBuilder)
     }
 
-    override fun isDebugEnabled(): Boolean {
-        return level >= Level.DEBUG
+    override fun debug(throwable: Throwable?, elements: PelletLogElements?, messageBuilder: () -> String) {
+        log(PelletLogLevel.DEBUG, throwable, elements, messageBuilder)
     }
 
-    override fun debug(msg: String?) {
-        if (!isDebugEnabled) {
-            return
-        }
-        logStructured(Level.DEBUG, msg, elements = null)
+    override fun trace(elements: PelletLogElements?, messageBuilder: () -> String) {
+        log(PelletLogLevel.TRACE, elements, messageBuilder)
     }
 
-    override fun debug(format: String?, arg: Any?) {
-        if (!isDebugEnabled) {
-            return
-        }
-        val formattingTuple = MessageFormatter.format(format, arg)
-        logStructured(Level.DEBUG, formattingTuple.message, formattingTuple.throwable)
+    override fun trace(throwable: Throwable?, elements: PelletLogElements?, messageBuilder: () -> String) {
+        log(PelletLogLevel.TRACE, throwable, elements, messageBuilder)
     }
 
-    override fun debug(format: String?, arg1: Any?, arg2: Any?) {
-        if (!isDebugEnabled) {
-            return
-        }
-        val formattingTuple = MessageFormatter.format(format, arg1, arg2)
-        logStructured(Level.DEBUG, formattingTuple.message, formattingTuple.throwable)
-    }
-
-    override fun debug(format: String?, vararg arguments: Any?) {
-        if (!isDebugEnabled) {
-            return
-        }
-        val formattingTuple = MessageFormatter.format(format, arguments)
-        logStructured(Level.DEBUG, formattingTuple.message, formattingTuple.throwable)
-    }
-
-    override fun debug(msg: String?, t: Throwable?) {
-        if (!isDebugEnabled) {
-            return
-        }
-        logStructured(Level.DEBUG, msg, t)
-    }
-
-    override fun isInfoEnabled(): Boolean {
-        return level >= Level.INFO
-    }
-
-    override fun info(msg: String?) {
-        if (!isInfoEnabled) {
-            return
-        }
-        logStructured(Level.INFO, msg, elements = null)
-    }
-
-    override fun info(format: String?, arg: Any?) {
-        if (!isInfoEnabled) {
-            return
-        }
-        val formattingTuple = MessageFormatter.format(format, arg)
-        logStructured(Level.INFO, formattingTuple.message, formattingTuple.throwable)
-    }
-
-    override fun info(format: String?, arg1: Any?, arg2: Any?) {
-        if (!isInfoEnabled) {
-            return
-        }
-        val formattingTuple = MessageFormatter.format(format, arg1, arg2)
-        logStructured(Level.INFO, formattingTuple.message, formattingTuple.throwable)
-    }
-
-    override fun info(format: String?, vararg arguments: Any?) {
-        if (!isInfoEnabled) {
-            return
-        }
-        val formattingTuple = MessageFormatter.format(format, arguments)
-        logStructured(Level.INFO, formattingTuple.message, formattingTuple.throwable)
-    }
-
-    override fun info(msg: String?, t: Throwable?) {
-        if (!isInfoEnabled) {
-            return
-        }
-        logStructured(Level.INFO, msg, t)
-    }
-
-    override fun isWarnEnabled(): Boolean {
-        return level >= Level.WARN
-    }
-
-    override fun warn(msg: String?) {
-        if (!isWarnEnabled) {
-            return
-        }
-        logStructured(Level.WARN, msg, elements = null)
-    }
-
-    override fun warn(format: String?, arg: Any?) {
-        if (!isWarnEnabled) {
-            return
-        }
-        val formattingTuple = MessageFormatter.format(format, arg)
-        logStructured(Level.WARN, formattingTuple.message, formattingTuple.throwable)
-    }
-
-    override fun warn(format: String?, vararg arguments: Any?) {
-        if (!isWarnEnabled) {
-            return
-        }
-        val formattingTuple = MessageFormatter.format(format, arguments)
-        logStructured(Level.WARN, formattingTuple.message, formattingTuple.throwable)
-    }
-
-    override fun warn(format: String?, arg1: Any?, arg2: Any?) {
-        if (!isWarnEnabled) {
-            return
-        }
-        val formattingTuple = MessageFormatter.format(format, arg1, arg2)
-        logStructured(Level.WARN, formattingTuple.message, formattingTuple.throwable)
-    }
-
-    override fun warn(msg: String?, t: Throwable?) {
-        if (!isWarnEnabled) {
-            return
-        }
-        logStructured(Level.WARN, msg, t)
-    }
-
-    override fun isErrorEnabled(): Boolean {
-        @Suppress("KotlinConstantConditions")
-        return level >= Level.ERROR
-    }
-
-    override fun error(msg: String?) {
-        if (!isErrorEnabled) {
-            return
-        }
-        logStructured(Level.ERROR, msg, elements = null)
-    }
-
-    override fun error(format: String?, arg: Any?) {
-        if (!isErrorEnabled) {
-            return
-        }
-        val formattingTuple = MessageFormatter.format(format, arg)
-        logStructured(Level.ERROR, formattingTuple.message, formattingTuple.throwable)
-    }
-
-    override fun error(format: String?, arg1: Any?, arg2: Any?) {
-        if (!isErrorEnabled) {
-            return
-        }
-        val formattingTuple = MessageFormatter.format(format, arg1, arg2)
-        logStructured(Level.ERROR, formattingTuple.message, formattingTuple.throwable)
-    }
-
-    override fun error(format: String?, vararg arguments: Any?) {
-        if (!isErrorEnabled) {
-            return
-        }
-        val formattingTuple = MessageFormatter.format(format, arguments)
-        logStructured(Level.ERROR, formattingTuple.message, formattingTuple.throwable)
-    }
-
-    override fun error(msg: String?, t: Throwable?) {
-        if (!isErrorEnabled) {
-            return
-        }
-        logStructured(Level.ERROR, msg, t)
-    }
-
-    private fun logStructured(
-        level: Level,
-        message: String?,
-        throwable: Throwable?
+    override fun log(
+        level: PelletLogLevel,
+        elements: PelletLogElements?,
+        messageBuilder: () -> String
     ) {
-        if (throwable == null) {
-            return logStructured(level, message, elements = null)
+        if (!isLevelEnabled(level)) {
+            return
         }
-        val stacktrace = throwable.stackTraceToString()
-        val elements = PelletLoggingElements(
-            mapOf(throwableKey to JsonPrimitive(stacktrace))
-        )
-        logStructured(Level.TRACE, message, elements)
+        val message = messageBuilder()
+        logStructured(level, message, elements)
+    }
+
+    override fun log(
+        level: PelletLogLevel,
+        throwable: Throwable?,
+        elements: PelletLogElements?,
+        messageBuilder: () -> String
+    ) {
+        if (!isLevelEnabled(level)) {
+            return
+        }
+        val computedElements = (elements ?: PelletLogElements())
+            .add(throwableKey, logElement(throwable?.stackTraceToString()))
+        val message = messageBuilder()
+        logStructured(level, message, computedElements)
     }
 
     private fun logStructured(
-        level: Level,
-        message: String?,
-        elements: PelletLoggingElements?
+        level: PelletLogLevel,
+        message: String,
+        elements: PelletLogElements?
     ) {
         val timestamp = encoder.encodeToJsonElement(InstantDateTimeSerializer, Instant.now())
-        val map = mutableMapOf(
+        val map = mutableMapOf<String, JsonElement>(
             levelKey to JsonPrimitive(level.toString().lowercase()),
             timestampKey to timestamp.jsonPrimitive,
             messageKey to JsonPrimitive(message),
@@ -279,7 +115,17 @@ public class PelletStructuredLogger(
             map += jsonMdcElements
         }
         if (elements != null) {
-            map += (elements.all().toMap() - map.keys)
+            val jsonLogElements = (elements.all() - map.keys)
+                .mapValues {
+                    val container = it.value
+                    return@mapValues when (container) {
+                        is PelletLogElement.NullValue -> JsonNull
+                        is PelletLogElement.StringValue -> JsonPrimitive(container.value)
+                        is PelletLogElement.NumberValue -> JsonPrimitive(container.value)
+                        is PelletLogElement.BooleanValue -> JsonPrimitive(container.value)
+                    }
+                }
+            map += jsonLogElements
         }
         val json = JsonObject(map)
         val encoded = encoder.encodeToString(json)
@@ -288,5 +134,10 @@ public class PelletStructuredLogger(
         synchronized(encoder) {
             println(encoded)
         }
+    }
+
+    private fun isLevelEnabled(level: PelletLogLevel): Boolean {
+        val currentLevel = levelProvider()
+        return level.value >= currentLevel.value
     }
 }

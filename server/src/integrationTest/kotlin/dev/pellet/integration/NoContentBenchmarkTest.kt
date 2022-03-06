@@ -38,6 +38,7 @@ class NoContentBenchmarkTest {
     fun `benchmark no content response`() = runBlocking {
         val counter = AtomicInteger(numberOfRequests)
         val pellet = pelletServer {
+            logRequests = false
             httpConnector {
                 endpoint = PelletConnector.Endpoint(
                     "127.0.0.1",
@@ -60,7 +61,7 @@ class NoContentBenchmarkTest {
             .build()
         client.dispatcher.maxRequestsPerHost = 30
         client.connectionPool.connectionCount()
-        logger.info("sending ${counter.get()} requests...")
+        logger.info { "sending ${counter.get()} requests..." }
 
         val dispatcher = Dispatchers.Default
         val channel = Channel<Request>()
@@ -91,7 +92,7 @@ class NoContentBenchmarkTest {
                     supervisor.cancel()
                     return@async
                 }
-                logger.info("completed $count")
+                logger.info { "completed $count" }
                 delay(1000L)
             }
         }.join()
@@ -100,7 +101,7 @@ class NoContentBenchmarkTest {
         val endTime = Instant.now()
         val timeElapsedMs = Duration.between(startTime, endTime).toMillis()
         val rps = (numberOfRequests / timeElapsedMs.toDouble()) * 1000L
-        logger.info("completed rps: $rps")
+        logger.info { "completed rps: $rps" }
     }
 
     private suspend fun CoroutineScope.sendRequests(

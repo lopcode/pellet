@@ -41,6 +41,7 @@ subprojects {
         implementation(kotlin("stdlib-jdk8"))
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.6.0")
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j:1.6.0")
         implementation("org.slf4j:slf4j-api:1.7.32")
 
         testImplementation(kotlin("test"))
