@@ -1,5 +1,7 @@
 package dev.pellet.server.codec.http
 
+import dev.pellet.logging.PelletLogElements
+import dev.pellet.logging.logElement
 import dev.pellet.logging.pelletLogger
 import dev.pellet.server.CloseReason
 import dev.pellet.server.PelletServerClient
@@ -10,15 +12,45 @@ import dev.pellet.server.responder.http.PelletHTTPResponder
 import dev.pellet.server.responder.http.PelletHTTPRouteContext
 import dev.pellet.server.routing.http.HTTPRouteResponse
 import dev.pellet.server.routing.http.HTTPRouting
+import java.time.Instant
+import java.time.ZoneOffset.UTC
+import java.time.format.DateTimeFormatterBuilder
+import java.time.format.TextStyle
+import java.time.temporal.ChronoField
 
 internal class HTTPRequestHandler(
     private val client: PelletServerClient,
     private val router: HTTPRouting,
-    private val pool: PelletBufferPooling
+    private val pool: PelletBufferPooling,
+    private val logRequests: Boolean
 ) : CodecHandler<HTTPRequestMessage> {
 
     private val timer = PelletTimer()
     private val logger = pelletLogger<HTTPRequestHandler>()
+
+    companion object {
+
+        val commonDateFormat = DateTimeFormatterBuilder()
+            .appendValue(ChronoField.DAY_OF_MONTH, 2)
+            .appendLiteral('/')
+            .appendText(ChronoField.MONTH_OF_YEAR, TextStyle.SHORT)
+            .appendLiteral('/')
+            .appendValue(ChronoField.YEAR, 4)
+            .appendLiteral(':')
+            .appendValue(ChronoField.HOUR_OF_DAY, 2)
+            .appendLiteral(':')
+            .appendValue(ChronoField.MINUTE_OF_HOUR, 2)
+            .appendLiteral(':')
+            .appendValue(ChronoField.SECOND_OF_MINUTE, 2)
+            .appendLiteral(' ')
+            .appendOffset("+HHMM", "0000")
+            .toFormatter()!!
+
+        const val requestMethodKey = "request.method"
+        const val requestUriKey = "request.uri"
+        const val responseCodeKey = "response.code"
+        const val responseDurationKey = "response.duration_ms"
+    }
 
     override suspend fun handle(output: HTTPRequestMessage) {
         timer.reset()
@@ -29,30 +61,59 @@ internal class HTTPRequestHandler(
             val response = HTTPRouteResponse.Builder()
                 .notFound()
                 .build()
-            val message = mapRouteResponseToMessage(response)
-            responder.respond(message)
+            respond(output, response, responder, timer)
         } else {
             val routeResult = runCatching {
                 route.handler.handle(context)
             }
             if (routeResult.isFailure) {
-                logger.error("failed to handle request", routeResult.exceptionOrNull())
+                logger.error(routeResult.exceptionOrNull()) { "failed to handle request" }
                 val response = HTTPRouteResponse.Builder()
                     .internalServerError()
                     .build()
-                val message = mapRouteResponseToMessage(response)
-                responder.respond(message)
+                respond(output, response, responder, timer)
+            } else {
+                respond(output, routeResult.getOrThrow(), responder, timer)
             }
-            val message = mapRouteResponseToMessage(routeResult.getOrThrow())
-            responder.respond(message)
         }
 
         val connectionHeader = output.headers.getSingleOrNull(HTTPHeaderConstants.connection)
         handleConnectionHeader(connectionHeader)
         output.release(pool)
+    }
 
-        // todo: track request durations
+    private suspend fun respond(
+        request: HTTPRequestMessage,
+        response: HTTPRouteResponse,
+        responder: PelletHTTPResponder,
+        timer: PelletTimer
+    ) {
+        val message = mapRouteResponseToMessage(response)
         val requestDuration = timer.markAndReset()
+        if (logRequests) {
+            val elements = PelletLogElements(
+                mapOf(
+                    requestMethodKey to logElement(request.requestLine.method.toString()),
+                    requestUriKey to logElement(request.requestLine.resourceUri.toString()),
+                    responseCodeKey to logElement(message.statusLine.statusCode),
+                    responseDurationKey to logElement(requestDuration.toMillis())
+                )
+            )
+
+            logRequestResponse(request, response, elements)
+        }
+        responder.respond(message)
+    }
+
+    private fun logRequestResponse(
+        request: HTTPRequestMessage,
+        response: HTTPRouteResponse,
+        elements: PelletLogElements
+    ) {
+        val dateTime = commonDateFormat.format(Instant.now().atZone(UTC))
+        val (method, uri, version) = request.requestLine
+        val responseSize = response.entity.sizeBytes
+        logger.info(elements) { "${client.remoteHostString} - - [$dateTime] \"$method $uri $version\" ${response.statusCode} $responseSize" }
     }
 
     private fun handleConnectionHeader(connectionHeader: HTTPHeader?) {

@@ -55,7 +55,7 @@ class SocketConnector(
                 )
                 return
             } catch (exception: IOException) {
-                logger.warn("failed to read $socketChannel", exception)
+                logger.warn(exception) { "failed to read $socketChannel" }
                 close(
                     client,
                     codec,

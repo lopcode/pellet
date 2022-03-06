@@ -30,7 +30,7 @@ fun createSocketAcceptJob(
     val group = AsynchronousChannelGroup.withThreadPool(Executors.newFixedThreadPool(2))
     val unboundSocket = AsynchronousServerSocketChannel.open(group)
     val serverSocketChannel = unboundSocket.bind(socketAddress)
-    logger.debug("socket opened: $socketAddress")
+    logger.debug { "socket opened: $socketAddress" }
 
     return scope.launch(
         start = CoroutineStart.LAZY
@@ -39,13 +39,13 @@ fun createSocketAcceptJob(
             val socketChannel = try {
                 serverSocketChannel.awaitAccept()
             } catch (exception: IOException) {
-                logger.error("failed to accept connection", exception)
+                logger.error(exception) { "failed to accept connection" }
                 break
             }
 
             launchReadLoop(socketChannel)
 
-            logger.debug("accepted: $socketChannel")
+            logger.debug { "accepted: $socketChannel" }
             yield()
         }
     }

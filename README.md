@@ -1,6 +1,6 @@
 # Pellet
 
-An opinionated Kotlin web framework, with best-practices built-in.
+An opinionated Kotlin web framework, with best-practices built-in. Enthusiastically uses and encourages Kotlin-first features and idioms, to help you write concise, correct, and pragmatic backend services.
 
 Pellet handles a huge number of requests per second, has a tiny dependency graph (`kotlin-stdlib`, `kotlinx-coroutines`, and `slf4j-api`), and offers approximately one way of doing things.
 
@@ -36,14 +36,12 @@ fun main() = runBlocking {
 }
 ```
 
-Pellet will start up:
+Pellet will start up, and output log messages in a structured format:
 ```
 {"level":"info","timestamp":"2022-02-27T22:23:38.653728Z","message":"Pellet server starting...","name":"dev.pellet.server.PelletServer","thread":"main"}
 {"level":"info","timestamp":"2022-02-27T22:23:38.748977Z","message":"Get help, give feedback, and support development at https://www.pellet.dev","name":"dev.pellet.server.PelletServer","thread":"main"}
 {"level":"info","timestamp":"2022-02-27T22:23:38.749632Z","message":"Starting connector: HTTP(hostname=localhost, port=8082, router=dev.pellet.server.routing.http.PelletHTTPRouter@189cbd7c)","name":"dev.pellet.server.PelletServer","thread":"main"}
 {"level":"info","timestamp":"2022-02-27T22:23:38.750098Z","message":"Routes: \nPelletHTTPRoute(method=GET, uri=/, handler=dev.pellet.demo.DemoKt$main$1$sharedRouter$1$1@80e75f5d)\nPelletHTTPRoute(method=POST, uri=/v1/hello, handler=dev.pellet.demo.DemoKt$main$1$sharedRouter$1$2@80e75f5d)","name":"dev.pellet.server.PelletServer","thread":"main"}
-{"level":"info","timestamp":"2022-02-27T22:23:38.759513Z","message":"Starting connector: HTTP(hostname=localhost, port=8083, router=dev.pellet.server.routing.http.PelletHTTPRouter@189cbd7c)","name":"dev.pellet.server.PelletServer","thread":"main"}
-{"level":"info","timestamp":"2022-02-27T22:23:38.759684Z","message":"Routes: \nPelletHTTPRoute(method=GET, uri=/, handler=dev.pellet.demo.DemoKt$main$1$sharedRouter$1$1@80e75f5d)\nPelletHTTPRoute(method=POST, uri=/v1/hello, handler=dev.pellet.demo.DemoKt$main$1$sharedRouter$1$2@80e75f5d)","name":"dev.pellet.server.PelletServer","thread":"main"}
 {"level":"info","timestamp":"2022-02-27T22:23:38.762581Z","message":"Pellet started in 145ms","name":"dev.pellet.server.PelletServer","thread":"main"}
 ```
 
@@ -61,6 +59,17 @@ User-Agent: HTTPie/2.6.0
 
 HTTP/1.1 204 No Content
 X-Hello: World
+```
+
+Which produces a request log line, including basic structured log elements like request duration and response code, like so:
+```
+{"level":"info","timestamp":"2022-02-27T22:23:38.762581Z","message":"127.0.0.1 - - [05/Mar/2022:23:48:27 0000] \"GET /v1/hello HTTP/1.1\" 204 0","name":"dev.pellet.server.codec.http.HTTPRequestHandler","thread":"DefaultDispatcher-worker-3","request.method":"GET","request.uri":"/v1/hello","response.code":204,"response.duration_ms":1}
+```
+
+Errors thrown in handlers are logged appropriately:
+```
+{"level":"error","timestamp":"2022-03-06T00:03:58.526635Z","message":"failed to handle request","name":"dev.pellet.server.codec.http.HTTPRequestHandler","thread":"DefaultDispatcher-worker-2","throwable":"java.lang.RuntimeException: intentional error\n\tat dev.pellet.demo.DemoKt.handleForceError(Demo.kt:76)\n\tat dev.pellet.demo.DemoKt.access$handleForceError(Demo.kt:1)\n\tat dev.pellet.demo.DemoKt$main$1$sharedRouter$1$3.handle(Demo.kt:19)\n\tat dev.pellet.demo.DemoKt$main$1$sharedRouter$1$3.handle(Demo.kt:19)\n\tat dev.pellet.server.codec.http.HTTPRequestHandler.handle(HTTPRequestHandler.kt:62)\n\tat dev.pellet.server.codec.http.HTTPMessageCodec.consume(HTTPMessageCodec.kt:94)\n\tat dev.pellet.server.connector.SocketConnector.readLoop(SocketConnector.kt:76)\n\tat dev.pellet.server.connector.SocketConnector.access$readLoop(SocketConnector.kt:18)\n\tat dev.pellet.server.connector.SocketConnector$readLoop$1.invokeSuspend(SocketConnector.kt)\n\tat kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)\n\tat kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:106)\n\tat kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:571)\n\tat kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:750)\n\tat kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:678)\n\tat kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:665)\n"}
+{"level":"info","timestamp":"2022-03-06T00:03:58.541244Z","message":"127.0.0.1 - - [06/Mar/2022:00:03:58 0000] \"GET /v1/error HTTP/1.1\" 500 0","name":"dev.pellet.server.codec.http.HTTPRequestHandler","thread":"DefaultDispatcher-worker-2","request.method":"GET","request.uri":"/v1/error","response.code":500,"response.duration_ms":2}
 ```
 
 You can find more examples in the `demo` subproject.

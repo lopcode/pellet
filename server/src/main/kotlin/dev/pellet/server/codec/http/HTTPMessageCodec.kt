@@ -126,7 +126,7 @@ internal class HTTPMessageCodec(
                             val endLine = chunkLineBuffer.stringifyAndClear(Charsets.US_ASCII)
                             assert(endLine.isEmpty())
 
-                            logger.debug("read chunk end line")
+                            logger.debug { "read chunk end line" }
                             handleChunkedEntity()
                             output.handle(buildMessage())
                         }
@@ -223,7 +223,7 @@ internal class HTTPMessageCodec(
     private fun handleRequestLine() {
         val requestLineString = requestLineBuffer.stringifyAndClear(Charsets.US_ASCII)
         val parsedRequestLine = parseRequestLine(requestLineString).getOrThrow()
-        logger.debug("got request line: $parsedRequestLine")
+        logger.debug { "got request line: $parsedRequestLine" }
         this.requestLine = parsedRequestLine
         state = ConsumeState.HEADERS
     }
@@ -242,7 +242,7 @@ internal class HTTPMessageCodec(
     }
 
     private fun handleEndOfHeaders() {
-        logger.debug("got headers: $headers")
+        logger.debug { "got headers: $headers" }
 
         val transferEncoding = headers.getSingleOrNull(HTTPHeaderConstants.transferEncoding)
         val isChunked = transferEncoding?.rawValue?.equals(HTTPHeaderConstants.chunked) ?: false
@@ -277,7 +277,7 @@ internal class HTTPMessageCodec(
                 ConsumeState.REQUEST_LINE
             }
         }
-        logger.debug("state after headers: $state")
+        logger.debug { "state after headers: $state" }
     }
 
     // Copies bytes from the source to the target buffer until LF is found
