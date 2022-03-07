@@ -198,7 +198,8 @@ internal class HTTPMessageCodec(
             buffer = pool.provide()
                 .limit(expectedEntityOctets)
                 .put(entityBuffer)
-                .flip()
+                .flip(),
+            contentType = null // todo: extract content type from headers
         )
         entityBuffer.clear()
         expectedEntityOctets = -1
@@ -212,7 +213,8 @@ internal class HTTPMessageCodec(
             buffer = pool.provide()
                 .limit(entityBuffer.limit())
                 .put(entityBuffer)
-                .flip()
+                .flip(),
+            contentType = null // todo: extract content type from headers
         )
         entityBuffer.clear()
         expectedChunkSizeOctets = -1

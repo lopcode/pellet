@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 data class PelletBuffer(
     val byteBuffer: ByteBuffer,
-    internal val used: AtomicBoolean
+    internal val used: AtomicBoolean = AtomicBoolean(true)
 ) {
 
     fun put(

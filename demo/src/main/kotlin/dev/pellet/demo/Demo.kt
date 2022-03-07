@@ -7,6 +7,7 @@ import dev.pellet.server.PelletConnector
 import dev.pellet.server.responder.http.PelletHTTPRouteContext
 import dev.pellet.server.routing.http.HTTPRouteResponse
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 
 object Demo
 
@@ -15,6 +16,7 @@ val logger = pelletLogger<Demo>()
 fun main() = runBlocking {
     val sharedRouter = httpRouter {
         get("/", ::handleRequest)
+        get("/v1/hello", ::handleResponseBody)
         post("/v1/hello", ::handleRequest)
         get("/v1/error", ::handleForceError)
     }
@@ -72,4 +74,20 @@ private suspend fun handleForceError(
     context: PelletHTTPRouteContext
 ): HTTPRouteResponse {
     throw RuntimeException("intentional error")
+}
+
+@kotlinx.serialization.Serializable
+data class ResponseBody(
+    val hello: String
+)
+
+private suspend fun handleResponseBody(
+    context: PelletHTTPRouteContext
+): HTTPRouteResponse {
+    val responseBody = ResponseBody(hello = "world 🌎")
+    return HTTPRouteResponse.Builder()
+        .statusCode(200)
+        .jsonEntity(Json, responseBody)
+        .header("X-Hello", "World")
+        .build()
 }
