@@ -1,10 +1,10 @@
 # Pellet
 
-An opinionated Kotlin web framework, with best-practices built-in. Enthusiastically uses and encourages Kotlin-first features and idioms, to help you write concise, correct, and pragmatic backend services.
+An opinionated Kotlin web framework, with best-practices built-in. Enthusiastically uses and encourages Kotlin-first features and idioms, to help you write concise, correct, and pragmatic backend services 🚀.
 
-Pellet handles a huge number of requests per second, has a tiny dependency graph (`kotlin-stdlib`, `kotlinx-coroutines`, and `slf4j-api`), and offers approximately one way of doing things.
+Pellet handles a huge number of requests per second, has a tiny dependency graph (`kotlin-stdlib`, `kotlinx-coroutines`, and `slf4j-api`), and offers approximately one way of doing things. The framework's conciseness is achieved through functional composition, instead of traditional JVM approaches involving annotations and reflection. 
 
-This project is still in the prototyping phase, but you're welcome to pull it down and give it a try.
+This project is still in the prototyping phase - clone the project and try it! Let me know what you think, and what to focus on next, [on Discord](https://www.carrot.blog/discord) 💬.
 
 I write about building Pellet in a series on my blog: https://www.carrot.blog/series/pellet/
 
@@ -70,6 +70,38 @@ Errors thrown in handlers are logged appropriately:
 ```
 {"level":"error","timestamp":"2022-03-06T00:03:58.526635Z","message":"failed to handle request","name":"dev.pellet.server.codec.http.HTTPRequestHandler","thread":"DefaultDispatcher-worker-2","throwable":"java.lang.RuntimeException: intentional error\n\tat dev.pellet.demo.DemoKt.handleForceError(Demo.kt:76)\n\tat dev.pellet.demo.DemoKt.access$handleForceError(Demo.kt:1)\n\tat dev.pellet.demo.DemoKt$main$1$sharedRouter$1$3.handle(Demo.kt:19)\n\tat dev.pellet.demo.DemoKt$main$1$sharedRouter$1$3.handle(Demo.kt:19)\n\tat dev.pellet.server.codec.http.HTTPRequestHandler.handle(HTTPRequestHandler.kt:62)\n\tat dev.pellet.server.codec.http.HTTPMessageCodec.consume(HTTPMessageCodec.kt:94)\n\tat dev.pellet.server.connector.SocketConnector.readLoop(SocketConnector.kt:76)\n\tat dev.pellet.server.connector.SocketConnector.access$readLoop(SocketConnector.kt:18)\n\tat dev.pellet.server.connector.SocketConnector$readLoop$1.invokeSuspend(SocketConnector.kt)\n\tat kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)\n\tat kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:106)\n\tat kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:571)\n\tat kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:750)\n\tat kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:678)\n\tat kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:665)\n"}
 {"level":"info","timestamp":"2022-03-06T00:03:58.541244Z","message":"127.0.0.1 - - [06/Mar/2022:00:03:58 0000] \"GET /v1/error HTTP/1.1\" 500 0","name":"dev.pellet.server.codec.http.HTTPRequestHandler","thread":"DefaultDispatcher-worker-2","request.method":"GET","request.uri":"/v1/error","response.code":500,"response.duration_ms":2}
+```
+
+Pellet integrates nicely with `kotlinx.serialization`. For example, you can define a handler:
+```
+@kotlinx.serialization.Serializable
+data class ResponseBody(
+    val hello: String
+)
+
+private suspend fun handleResponseBody(
+    context: PelletHTTPRouteContext
+): HTTPRouteResponse {
+    val responseBody = ResponseBody(hello = "world 🌎")
+    return HTTPRouteResponse.Builder()
+        .statusCode(200)
+        .jsonEntity(Json, responseBody)
+        .header("X-Hello", "World")
+        .build()
+}
+```
+
+Which will respond like so:
+```
+🥕 carrot 🗂 ~/git/pellet $ http localhost:8082/v1/hello
+HTTP/1.1 200 OK
+Content-Length: 22
+Content-Type: application/json; charset=utf-8
+X-Hello: World
+
+{
+    "hello": "world 🌎"
+}
 ```
 
 You can find more examples in the `demo` subproject.

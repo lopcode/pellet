@@ -134,11 +134,15 @@ internal class HTTPRequestHandler(
     private fun mapRouteResponseToMessage(
         routeResult: HTTPRouteResponse
     ): HTTPResponseMessage {
+        val effectiveStatusCode = when (routeResult.statusCode) {
+            0 -> 200
+            else -> routeResult.statusCode
+        }
         return HTTPResponseMessage(
             statusLine = HTTPStatusLine(
                 version = "HTTP/1.1",
-                statusCode = routeResult.statusCode,
-                reasonPhrase = mapCodeToReasonPhrase(routeResult.statusCode)
+                statusCode = effectiveStatusCode,
+                reasonPhrase = mapCodeToReasonPhrase(effectiveStatusCode)
             ),
             headers = routeResult.headers,
             entity = routeResult.entity

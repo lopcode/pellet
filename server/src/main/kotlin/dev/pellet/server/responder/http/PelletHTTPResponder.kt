@@ -91,14 +91,24 @@ private fun buildEffectiveResponse(
     original: HTTPResponseMessage
 ): HTTPResponseMessage {
     if (original.entity is HTTPEntity.Content) {
-        // todo: add content type
-        val effectiveResponse = original.copy(
-            headers = original.headers.add(
+        val headers = original.headers
+            .add(
                 HTTPHeader(
                     HTTPHeaderConstants.contentLength,
                     original.entity.buffer.limit().toString(10)
                 )
             )
+        val contentType = original.entity.contentType
+        if (contentType != null) {
+            headers.add(
+                HTTPHeader(
+                    HTTPHeaderConstants.contentType,
+                    contentType
+                )
+            )
+        }
+        val effectiveResponse = original.copy(
+            headers = headers
         )
         return effectiveResponse
     }
