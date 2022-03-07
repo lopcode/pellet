@@ -73,7 +73,7 @@ Errors thrown in handlers are logged appropriately:
 ```
 
 Pellet integrates nicely with `kotlinx.serialization`. For example, you can define a handler:
-```
+```kotlin
 @kotlinx.serialization.Serializable
 data class ResponseBody(
     val hello: String
