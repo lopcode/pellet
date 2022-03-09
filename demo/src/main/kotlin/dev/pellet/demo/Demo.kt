@@ -1,5 +1,6 @@
 package dev.pellet.demo
 
+import dev.pellet.logging.debug
 import dev.pellet.logging.pelletLogger
 import dev.pellet.server.PelletBuilder.httpRouter
 import dev.pellet.server.PelletBuilder.pelletServer

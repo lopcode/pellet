@@ -1,5 +1,6 @@
 package dev.pellet.server
 
+import dev.pellet.logging.info
 import dev.pellet.logging.pelletLogger
 import dev.pellet.server.buffer.AlwaysAllocatingPelletBufferPool
 import dev.pellet.server.codec.http.HTTPMessageCodec
