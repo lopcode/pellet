@@ -26,69 +26,31 @@ class PelletStructuredLogger(
         private val encoder = Json
     }
 
-    override fun error(elements: PelletLogElements?, messageBuilder: () -> String) {
-        log(PelletLogLevel.ERROR, elements, messageBuilder)
-    }
-
-    override fun error(throwable: Throwable?, elements: PelletLogElements?, messageBuilder: () -> String) {
-        log(PelletLogLevel.ERROR, throwable, elements, messageBuilder)
-    }
-
-    override fun warn(elements: PelletLogElements?, messageBuilder: () -> String) {
-        log(PelletLogLevel.WARN, elements, messageBuilder)
-    }
-
-    override fun warn(throwable: Throwable?, elements: PelletLogElements?, messageBuilder: () -> String) {
-        log(PelletLogLevel.WARN, throwable, elements, messageBuilder)
-    }
-
-    override fun info(elements: PelletLogElements?, messageBuilder: () -> String) {
-        log(PelletLogLevel.INFO, elements, messageBuilder)
-    }
-
-    override fun info(throwable: Throwable?, elements: PelletLogElements?, messageBuilder: () -> String) {
-        log(PelletLogLevel.INFO, throwable, elements, messageBuilder)
-    }
-
-    override fun debug(elements: PelletLogElements?, messageBuilder: () -> String) {
-        log(PelletLogLevel.DEBUG, elements, messageBuilder)
-    }
-
-    override fun debug(throwable: Throwable?, elements: PelletLogElements?, messageBuilder: () -> String) {
-        log(PelletLogLevel.DEBUG, throwable, elements, messageBuilder)
-    }
-
-    override fun trace(elements: PelletLogElements?, messageBuilder: () -> String) {
-        log(PelletLogLevel.TRACE, elements, messageBuilder)
-    }
-
-    override fun trace(throwable: Throwable?, elements: PelletLogElements?, messageBuilder: () -> String) {
-        log(PelletLogLevel.TRACE, throwable, elements, messageBuilder)
-    }
-
     override fun log(
         level: PelletLogLevel,
-        elements: PelletLogElements?,
+        elementsBuilder: (() -> PelletLogElements)?,
         messageBuilder: () -> String
     ) {
         if (!isLevelEnabled(level)) {
             return
         }
         val message = messageBuilder()
+        val elements = elementsBuilder?.invoke()
         logStructured(level, message, elements)
     }
 
     override fun log(
         level: PelletLogLevel,
         throwable: Throwable?,
-        elements: PelletLogElements?,
+        elementsBuilder: (() -> PelletLogElements)?,
         messageBuilder: () -> String
     ) {
         if (!isLevelEnabled(level)) {
             return
         }
+        val elements = elementsBuilder?.invoke()
         val computedElements = (elements ?: PelletLogElements())
-            .add(throwableKey, logElement(throwable?.stackTraceToString()))
+            .add(throwableKey, throwable)
         val message = messageBuilder()
         logStructured(level, message, computedElements)
     }

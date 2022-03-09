@@ -1,7 +1,9 @@
 package dev.pellet.server.codec.http
 
 import dev.pellet.logging.PelletLogElements
-import dev.pellet.logging.logElement
+import dev.pellet.logging.error
+import dev.pellet.logging.info
+import dev.pellet.logging.logElements
 import dev.pellet.logging.pelletLogger
 import dev.pellet.server.CloseReason
 import dev.pellet.server.PelletServerClient
@@ -91,24 +93,21 @@ internal class HTTPRequestHandler(
         val message = mapRouteResponseToMessage(response)
         val requestDuration = timer.markAndReset()
         if (logRequests) {
-            val elements = PelletLogElements(
-                mapOf(
-                    requestMethodKey to logElement(request.requestLine.method.toString()),
-                    requestUriKey to logElement(request.requestLine.resourceUri.toString()),
-                    responseCodeKey to logElement(message.statusLine.statusCode),
-                    responseDurationKey to logElement(requestDuration.toMillis())
-                )
-            )
-
-            logRequestResponse(request, response, elements)
+            val elements = logElements {
+                add(requestMethodKey, request.requestLine.method.toString())
+                add(requestUriKey, request.requestLine.resourceUri.toString())
+                add(responseCodeKey, message.statusLine.statusCode)
+                add(responseDurationKey, requestDuration.toMillis())
+            }
+            logResponse(request, response, elements)
         }
         responder.respond(message)
     }
 
-    private fun logRequestResponse(
+    private fun logResponse(
         request: HTTPRequestMessage,
         response: HTTPRouteResponse,
-        elements: PelletLogElements
+        elements: () -> PelletLogElements
     ) {
         val dateTime = commonDateFormat.format(Instant.now().atZone(UTC))
         val (method, uri, version) = request.requestLine

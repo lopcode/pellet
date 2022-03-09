@@ -1,5 +1,7 @@
 package dev.pellet.server.connector
 
+import dev.pellet.logging.debug
+import dev.pellet.logging.error
 import dev.pellet.logging.pelletLogger
 import dev.pellet.server.extension.awaitAccept
 import kotlinx.coroutines.CoroutineScope

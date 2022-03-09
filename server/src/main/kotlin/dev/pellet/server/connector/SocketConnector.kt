@@ -1,6 +1,7 @@
 package dev.pellet.server.connector
 
 import dev.pellet.logging.pelletLogger
+import dev.pellet.logging.warn
 import dev.pellet.server.CloseReason
 import dev.pellet.server.PelletServerClient
 import dev.pellet.server.buffer.PelletBufferPooling
