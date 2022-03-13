@@ -92,10 +92,8 @@ class PelletStructuredLogger(
         val json = JsonObject(map)
         val encoded = encoder.encodeToString(json)
 
-        // Synchronize writing output to prevent multiple threads outputting at the same time
-        synchronized(encoder) {
-            println(encoded)
-        }
+        // Note that PrintStream synchronizes on itself to print output, so we don't need to do so here
+        println(encoded)
     }
 
     private fun isLevelEnabled(level: PelletLogLevel): Boolean {
