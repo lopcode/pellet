@@ -14,6 +14,10 @@ This project is still in the prototyping phase - give the latest version a try! 
 
 Gradle (Kotlin):
 ```
+repositories {
+    mavenCentral()
+}
+
 dependencies {
     implementation("dev.pellet:pellet-server:0.0.1")
     implementation("dev.pellet:pellet-logging:0.0.1")
