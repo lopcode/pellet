@@ -3,12 +3,13 @@ import java.net.URI
 
 plugins {
     `java-library`
+    kotlin("plugin.serialization") version "1.6.10"
     id("maven-publish")
     id("signing")
 }
 
 group = "dev.pellet"
-val projectTitle = "pellet-server"
+val projectTitle = "pellet-logging"
 project.setProperty("archivesBaseName", projectTitle)
 val environmentVersion = System.getenv("VERSION")
 if (!environmentVersion.isNullOrBlank()) {
@@ -20,7 +21,6 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":logging"))
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
 }
 
@@ -40,10 +40,10 @@ publishing {
     }
     publications {
         create<MavenPublication>("mavenJava") {
-            artifactId = "pellet-server"
+            artifactId = "pellet-logging"
             from(components["java"])
             pom {
-                name.set("Pellet Server")
+                name.set("Pellet Logging")
                 description.set("An opinionated Kotlin web framework, with best-practices built-in")
                 url.set("https://github.com/CarrotCodes/Pellet")
                 licenses {
