@@ -11,8 +11,10 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":server"))
-    implementation(project(":structured-logger"))
+//    implementation(project(":logging"))
+//    implementation(project(":server"))
+    implementation("dev.pellet:pellet-server:0.0.1")
+    implementation("dev.pellet:pellet-logging:0.0.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
 
     implementation("io.ktor:ktor-server-core:1.6.7")

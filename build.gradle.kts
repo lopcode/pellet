@@ -4,6 +4,7 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent
 plugins {
     kotlin("jvm") version "1.6.10"
     id("org.jlleitschuh.gradle.ktlint") version "10.2.0"
+    id("maven-publish")
 }
 
 repositories {
@@ -13,6 +14,20 @@ repositories {
 subprojects {
     apply(plugin = "org.jetbrains.kotlin.jvm")
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
+
+    java {
+        withJavadocJar()
+        withSourcesJar()
+
+        toolchain {
+            sourceCompatibility = JavaVersion.VERSION_17
+            targetCompatibility = JavaVersion.VERSION_17
+        }
+    }
+
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+        kotlinOptions.jvmTarget = "17"
+    }
 
     sourceSets.create("integrationTest") {
         compileClasspath += sourceSets["main"].output + sourceSets["test"].output
