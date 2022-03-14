@@ -12,6 +12,8 @@ You can support my work by sponsoring [on Patreon](https://www.patreon.com/carro
 
 This project is still in the prototyping phase - give the latest version a try! Let me know what you think, and what to focus on next, [on Discord](https://www.carrot.blog/discord) 💬.
 
+Note that the prototype is built with the latest JVM LTS release at the time of writing - Java 17. 
+
 Gradle (Kotlin):
 ```
 repositories {
