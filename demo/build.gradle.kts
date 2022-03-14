@@ -28,6 +28,6 @@ dependencies {
 }
 
 application {
-    mainClass.set("dev.pellet.DemoKt")
+    mainClass.set("dev.pellet.demo.DemoKt")
     applicationDefaultJvmArgs = listOf("-Xms512m", "-Xmx1024m")
 }
