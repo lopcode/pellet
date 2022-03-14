@@ -2,13 +2,23 @@
 
 An opinionated Kotlin web framework, with best-practices built-in. Enthusiastically uses and encourages Kotlin-first features and idioms, to help you write concise, correct, and pragmatic backend services 🚀.
 
-Pellet handles a huge number of requests per second, has a tiny dependency graph (`kotlin-stdlib`, `kotlinx-coroutines`, and `slf4j-api`), and offers approximately one way of doing things. The framework's conciseness is achieved through functional composition, instead of traditional JVM approaches involving annotations and reflection. 
-
-This project is still in the prototyping phase - clone the project and try it! Let me know what you think, and what to focus on next, [on Discord](https://www.carrot.blog/discord) 💬.
+Pellet handles a huge number of requests per second, has a tiny dependency graph (`kotlin-stdlib`, `kotlinx-coroutines`, and `slf4j-api`), and offers approximately one way of doing things. The framework's conciseness is achieved through functional composition, instead of traditional JVM approaches involving annotations and reflection.
 
 I write about building Pellet in a series on my blog: https://www.carrot.blog/series/pellet/
 
 You can support my work by sponsoring [on Patreon](https://www.patreon.com/carrotcodes) or [GitHub Sponsors](https://www.github.com/sponsors/carrotcodes) ⭐️
+
+## Releases
+
+This project is still in the prototyping phase - give the latest version a try! Let me know what you think, and what to focus on next, [on Discord](https://www.carrot.blog/discord) 💬.
+
+Gradle (Kotlin):
+```
+dependencies {
+    implementation("dev.pellet:pellet-server:0.0.1")
+    implementation("dev.pellet:pellet-logging:0.0.1")
+}
+```
 
 ## Examples
 
