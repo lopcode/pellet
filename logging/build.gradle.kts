@@ -3,7 +3,7 @@ import java.net.URI
 
 plugins {
     `java-library`
-    kotlin("plugin.serialization") version "1.6.10"
+    kotlin("plugin.serialization") version "1.6.20"
     id("maven-publish")
     id("signing")
 }

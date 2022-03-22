@@ -120,6 +120,42 @@ X-Hello: World
 }
 ```
 
+Pellet supports type-safe route building and variable matching:
+```kotlin
+val idDescriptor = uuidDescriptor("id")
+val helloIdPath = PelletHTTPRoutePath.Builder()
+    .addComponents("/v1")
+    .addVariable(idDescriptor)
+    .addComponents("/hello")
+    .build()
+@kotlinx.serialization.Serializable
+data class ResponseBody(
+    val hello: String
+)
+router {
+    get(helloIdPath) {
+        val id = it.pathParameter(idDescriptor).getOrThrow()
+        val responseBody = ResponseBody(hello = "$id 👋")
+        return HTTPRouteResponse.Builder()
+            .statusCode(200)
+            .jsonEntity(Json, responseBody)
+            .build()
+    }
+}
+```
+
+Which will respond like so:
+```
+🥕 carrot 🗂 ~/git/pellet $ http localhost:8082/v1/06b39add-2b57-4d58-b084-40afeacab2e9/hello
+HTTP/1.1 200 OK
+Content-Length: 53
+Content-Type: application/json; charset=utf-8
+
+{
+    "hello": "06b39add-2b57-4d58-b084-40afeacab2e9 👋"
+}
+```
+
 You can find more examples in the `demo` subproject.
 
 # License

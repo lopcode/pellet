@@ -7,5 +7,10 @@ interface HTTPRouting {
     val routes: List<PelletHTTPRoute>
 
     fun add(route: PelletHTTPRoute)
-    fun route(message: HTTPRequestMessage): PelletHTTPRoute?
+    fun route(message: HTTPRequestMessage): ResolvedRoute?
+
+    data class ResolvedRoute(
+        val route: PelletHTTPRoute,
+        val valueMap: Map<String, String>
+    )
 }

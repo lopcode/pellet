@@ -1,4 +1,4 @@
-package dev.pellet.server.codec.http
+package dev.pellet.server.routing.http
 
 import dev.pellet.logging.PelletLogElements
 import dev.pellet.logging.error
@@ -9,11 +9,14 @@ import dev.pellet.server.CloseReason
 import dev.pellet.server.PelletServerClient
 import dev.pellet.server.buffer.PelletBufferPooling
 import dev.pellet.server.codec.CodecHandler
+import dev.pellet.server.codec.http.HTTPHeader
+import dev.pellet.server.codec.http.HTTPHeaderConstants
+import dev.pellet.server.codec.http.HTTPRequestMessage
+import dev.pellet.server.codec.http.HTTPResponseMessage
+import dev.pellet.server.codec.http.HTTPStatusLine
 import dev.pellet.server.metrics.PelletTimer
 import dev.pellet.server.responder.http.PelletHTTPResponder
 import dev.pellet.server.responder.http.PelletHTTPRouteContext
-import dev.pellet.server.routing.http.HTTPRouteResponse
-import dev.pellet.server.routing.http.HTTPRouting
 import java.time.Instant
 import java.time.ZoneOffset.UTC
 import java.time.format.DateTimeFormatterBuilder
@@ -56,27 +59,26 @@ internal class HTTPRequestHandler(
 
     override suspend fun handle(output: HTTPRequestMessage) {
         timer.reset()
-        val context = PelletHTTPRouteContext(output, client)
         val responder = PelletHTTPResponder(client, pool)
-        val route = router.route(output)
-        if (route == null) {
+        val resolvedRoute = router.route(output)
+        if (resolvedRoute == null) {
             val response = HTTPRouteResponse.Builder()
                 .notFound()
                 .build()
             respond(output, response, responder, timer)
         } else {
+            val (route, valueMap) = resolvedRoute
+            val context = PelletHTTPRouteContext(output, client, valueMap)
             val routeResult = runCatching {
                 route.handler.handle(context)
             }
-            if (routeResult.isFailure) {
+            val response = routeResult.getOrElse {
                 logger.error(routeResult.exceptionOrNull()) { "failed to handle request" }
-                val response = HTTPRouteResponse.Builder()
+                HTTPRouteResponse.Builder()
                     .internalServerError()
                     .build()
-                respond(output, response, responder, timer)
-            } else {
-                respond(output, routeResult.getOrThrow(), responder, timer)
             }
+            respond(output, response, responder, timer)
         }
 
         val connectionHeader = output.headers.getSingleOrNull(HTTPHeaderConstants.connection)
