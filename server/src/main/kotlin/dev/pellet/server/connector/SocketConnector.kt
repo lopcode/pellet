@@ -13,11 +13,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import java.io.IOException
 import java.net.SocketAddress
+import java.nio.channels.AsynchronousChannelGroup
 import java.nio.channels.AsynchronousSocketChannel
 import java.nio.channels.ClosedChannelException
 
 class SocketConnector(
     private val scope: CoroutineScope,
+    private val group: AsynchronousChannelGroup,
     private val socketAddress: SocketAddress,
     private val pool: PelletBufferPooling,
     private val codecFactory: (PelletServerClient) -> Codec
@@ -27,6 +29,7 @@ class SocketConnector(
 
     override fun createAcceptJob() = createSocketAcceptJob(
         scope,
+        group,
         socketAddress,
         this::launchReadLoop
     )

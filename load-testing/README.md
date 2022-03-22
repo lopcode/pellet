@@ -4,11 +4,11 @@ Running the load tests locally:
 
 * Start `Demo.kt` at `localhost:8082`
 * Make sure `jmeter` is installed: `brew install jmeter`
-* Make sure JDK 16 is in use:
-  * eg `sdk use java 16.0.2-zulu`
-  * Modify `jmeter` `JAVA_HOME` to use JDK 16
+* Make sure JDK 8 is available:
+  * eg `sdk install java 8.0.322-zulu`
+  * Modify `jmeter` `JAVA_HOME` to use JDK 8
     * `atom /opt/homebrew/Cellar/jmeter/5.4.1/bin/jmeter`
-    * eg: `JAVA_HOME="/Users/carrot/.sdkman/candidates/java/16.0.2-zulu"`
+    * eg: `JAVA_HOME="/Users/carrot/.sdkman/candidates/java/8.0.322-zulu"`
 * Run standard load tests for 5 minutes: `./load-test.sh`
 
 ## Example TPS
@@ -20,11 +20,11 @@ Specs:
 
 ![example tps](example-tps.png)
 
-## Using `hey`
+## Using `oha`
 
-You can run some simpler, faster load tests locally using [hey](https://github.com/rakyll/hey):
+You can run some simpler, faster load tests locally using [oha](https://github.com/hatoo/oha):
 ```
-$ hey -z 20s http://localhost:8083
+$ oha -q 100000 -n 1000000 http://localhost:8083
 
 Summary:
   Total:	20.0007 secs

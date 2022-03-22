@@ -5,18 +5,18 @@ import dev.pellet.logging.pelletLogger
 import dev.pellet.server.buffer.PelletBuffer
 import dev.pellet.server.buffer.PelletBufferPooling
 import dev.pellet.server.codec.Codec
+import dev.pellet.server.codec.CodecHandler
 import dev.pellet.server.extension.advance
 import dev.pellet.server.extension.nextPositionOfOrNull
 import dev.pellet.server.extension.stringifyAndClear
 import dev.pellet.server.extension.trimLWS
 import dev.pellet.server.extension.trimTrailing
-import java.lang.IllegalArgumentException
 import java.net.URI
 import java.util.Locale
 import kotlin.math.min
 
 internal class HTTPMessageCodec(
-    private val output: HTTPRequestHandler,
+    private val output: CodecHandler<HTTPRequestMessage>,
     private val pool: PelletBufferPooling
 ) : Codec {
 

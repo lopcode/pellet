@@ -3,8 +3,8 @@ package dev.pellet.server
 import dev.pellet.server.codec.http.HTTPMethod
 import dev.pellet.server.routing.http.PelletHTTPRoute
 import dev.pellet.server.routing.http.PelletHTTPRouteHandling
+import dev.pellet.server.routing.http.PelletHTTPRoutePath
 import dev.pellet.server.routing.http.PelletHTTPRouter
-import java.net.URI
 
 @DslMarker
 @Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
@@ -35,14 +35,22 @@ class RouterBuilder {
 
     private val router = PelletHTTPRouter()
 
+    fun get(routePath: PelletHTTPRoutePath, handler: PelletHTTPRouteHandling) {
+        router.add(PelletHTTPRoute(HTTPMethod.Get, routePath, handler))
+    }
+
     fun get(path: String, handler: PelletHTTPRouteHandling) {
-        val uri = URI.create(path)
-        router.add(PelletHTTPRoute(HTTPMethod.Get, uri, handler))
+        val routePath = PelletHTTPRoutePath.parse(path)
+        get(routePath, handler)
+    }
+
+    fun post(routePath: PelletHTTPRoutePath, handler: PelletHTTPRouteHandling) {
+        router.add(PelletHTTPRoute(HTTPMethod.Post, routePath, handler))
     }
 
     fun post(path: String, handler: PelletHTTPRouteHandling) {
-        val uri = URI.create(path)
-        router.add(PelletHTTPRoute(HTTPMethod.Post, uri, handler))
+        val routePath = PelletHTTPRoutePath.parse(path)
+        post(routePath, handler)
     }
 
     internal fun build(): PelletHTTPRouter {

@@ -93,7 +93,7 @@ class NoContentBenchmarkTest {
                     supervisor.cancel()
                     return@async
                 }
-                logger.info { "completed $count" }
+                logger.info { "left to complete: $count" }
                 delay(1000L)
             }
         }.join()

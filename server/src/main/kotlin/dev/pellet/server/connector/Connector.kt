@@ -15,7 +15,6 @@ import java.net.SocketAddress
 import java.nio.channels.AsynchronousChannelGroup
 import java.nio.channels.AsynchronousServerSocketChannel
 import java.nio.channels.AsynchronousSocketChannel
-import java.util.concurrent.Executors
 
 private val logger = pelletLogger("Connector")
 
@@ -26,10 +25,10 @@ interface Connector {
 
 fun createSocketAcceptJob(
     scope: CoroutineScope,
+    group: AsynchronousChannelGroup,
     socketAddress: SocketAddress,
     launchReadLoop: suspend (AsynchronousSocketChannel) -> Unit
 ): Job {
-    val group = AsynchronousChannelGroup.withThreadPool(Executors.newFixedThreadPool(2))
     val unboundSocket = AsynchronousServerSocketChannel.open(group)
     val serverSocketChannel = unboundSocket.bind(socketAddress)
     logger.debug { "socket opened: $socketAddress" }

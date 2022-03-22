@@ -4,6 +4,7 @@ jobs:
   check:
     name: Run Gradle checks
     runs-on: ubuntu-20.04
+    timeout-minutes: 10
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -16,6 +17,7 @@ jobs:
   integration-tests:
     name: Run integration tests
     runs-on: ubuntu-20.04
+    timeout-minutes: 10
     steps:
       - name: Check out code
         uses: actions/checkout@v2

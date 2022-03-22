@@ -7,17 +7,26 @@ import dev.pellet.server.PelletBuilder.pelletServer
 import dev.pellet.server.PelletConnector
 import dev.pellet.server.responder.http.PelletHTTPRouteContext
 import dev.pellet.server.routing.http.HTTPRouteResponse
+import dev.pellet.server.routing.http.PelletHTTPRoutePath
+import dev.pellet.server.routing.uuidDescriptor
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 
 object Demo
 
 val logger = pelletLogger<Demo>()
+val idDescriptor = uuidDescriptor("id")
 
 fun main() = runBlocking {
+    val helloIdPath = PelletHTTPRoutePath.Builder()
+        .addComponents("/v1")
+        .addVariable(idDescriptor)
+        .addComponents("/hello")
+        .build()
     val sharedRouter = httpRouter {
         get("/", ::handleRequest)
         get("/v1/hello", ::handleResponseBody)
+        get(helloIdPath, ::handleNamedResponseBody)
         post("/v1/hello", ::handleRequest)
         get("/v1/error", ::handleForceError)
     }
@@ -86,6 +95,18 @@ private suspend fun handleResponseBody(
     context: PelletHTTPRouteContext
 ): HTTPRouteResponse {
     val responseBody = ResponseBody(hello = "world 🌎")
+    return HTTPRouteResponse.Builder()
+        .statusCode(200)
+        .jsonEntity(Json, responseBody)
+        .header("X-Hello", "World")
+        .build()
+}
+
+private suspend fun handleNamedResponseBody(
+    context: PelletHTTPRouteContext
+): HTTPRouteResponse {
+    val id = context.pathParameter(idDescriptor).getOrThrow()
+    val responseBody = ResponseBody(hello = "$id 👋")
     return HTTPRouteResponse.Builder()
         .statusCode(200)
         .jsonEntity(Json, responseBody)
