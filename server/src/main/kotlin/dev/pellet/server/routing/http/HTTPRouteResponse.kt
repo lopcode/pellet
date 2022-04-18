@@ -49,6 +49,12 @@ data class HTTPRouteResponse(
             return this
         }
 
+        fun badRequest(): Builder {
+            statusCode = 400
+            entity = HTTPEntity.NoContent
+            return this
+        }
+
         fun entity(entity: HTTPEntity): Builder {
             this.entity = entity
             return this

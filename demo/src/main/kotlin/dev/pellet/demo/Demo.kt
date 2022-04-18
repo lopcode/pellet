@@ -31,6 +31,7 @@ fun main() = runBlocking {
         get("/v1/error", ::handleForceError)
     }
     val pellet = pelletServer {
+        logRequests = true
         httpConnector {
             endpoint = PelletConnector.Endpoint(
                 hostname = "localhost",
@@ -106,7 +107,9 @@ private suspend fun handleNamedResponseBody(
     context: PelletHTTPRouteContext
 ): HTTPRouteResponse {
     val id = context.pathParameter(idDescriptor).getOrThrow()
-    val responseBody = ResponseBody(hello = "$id 👋")
+    val suffix = context.firstQueryParameter("suffix").getOrNull()
+        ?: "👋"
+    val responseBody = ResponseBody(hello = "$id $suffix")
     return HTTPRouteResponse.Builder()
         .statusCode(200)
         .jsonEntity(Json, responseBody)
