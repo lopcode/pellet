@@ -139,7 +139,9 @@ data class ResponseBody(
 router {
     get(helloIdPath) {
         val id = it.pathParameter(idDescriptor).getOrThrow()
-        val responseBody = ResponseBody(hello = "$id 👋")
+        val suffix = context.firstQueryParameter("suffix").getOrNull()
+            ?: "👋"
+        val responseBody = ResponseBody(hello = "$id $suffix")
         return HTTPRouteResponse.Builder()
             .statusCode(200)
             .jsonEntity(Json, responseBody)
@@ -157,6 +159,15 @@ Content-Type: application/json; charset=utf-8
 
 {
     "hello": "06b39add-2b57-4d58-b084-40afeacab2e9 👋"
+}
+
+🥕 carrot 🗂 ~/git/pellet $ http localhost:8082/v1/06b39add-2b57-4d58-b084-40afeacab2e9/hello\?suffix=🥕
+HTTP/1.1 200 OK
+Content-Length: 53
+Content-Type: application/json; charset=utf-8
+
+{
+    "hello": "06b39add-2b57-4d58-b084-40afeacab2e9 🥕"
 }
 ```
 

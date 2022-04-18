@@ -14,6 +14,7 @@ import dev.pellet.server.codec.http.HTTPHeaderConstants
 import dev.pellet.server.codec.http.HTTPRequestMessage
 import dev.pellet.server.codec.http.HTTPResponseMessage
 import dev.pellet.server.codec.http.HTTPStatusLine
+import dev.pellet.server.codec.http.query.QueryParser
 import dev.pellet.server.metrics.PelletTimer
 import dev.pellet.server.responder.http.PelletHTTPResponder
 import dev.pellet.server.responder.http.PelletHTTPRouteContext
@@ -67,23 +68,37 @@ internal class HTTPRequestHandler(
                 .build()
             respond(output, response, responder, timer)
         } else {
-            val (route, valueMap) = resolvedRoute
-            val context = PelletHTTPRouteContext(output, client, valueMap)
-            val routeResult = runCatching {
-                route.handler.handle(context)
-            }
-            val response = routeResult.getOrElse {
-                logger.error(routeResult.exceptionOrNull()) { "failed to handle request" }
-                HTTPRouteResponse.Builder()
-                    .internalServerError()
-                    .build()
-            }
+            val response = handleRoute(resolvedRoute, output)
             respond(output, response, responder, timer)
         }
 
         val connectionHeader = output.headers.getSingleOrNull(HTTPHeaderConstants.connection)
         handleConnectionHeader(connectionHeader)
         output.release(pool)
+    }
+
+    private suspend fun handleRoute(
+        resolvedRoute: HTTPRouting.ResolvedRoute,
+        rawMessage: HTTPRequestMessage
+    ): HTTPRouteResponse {
+        val (route, valueMap) = resolvedRoute
+        val query = rawMessage.requestLine.resourceUri.rawQuery ?: ""
+        val queryParameters = QueryParser.parseEncodedQuery(query).getOrElse {
+            return HTTPRouteResponse.Builder()
+                .badRequest()
+                .build()
+        }
+
+        val context = PelletHTTPRouteContext(rawMessage, client, valueMap, queryParameters)
+        val routeResult = runCatching {
+            route.handler.handle(context)
+        }
+        return routeResult.getOrElse {
+            logger.error(routeResult.exceptionOrNull()) { "failed to handle request" }
+            HTTPRouteResponse.Builder()
+                .internalServerError()
+                .build()
+        }
     }
 
     private suspend fun respond(
@@ -153,6 +168,7 @@ internal class HTTPRequestHandler(
     private fun mapCodeToReasonPhrase(code: Int) = when (code) {
         200 -> "OK"
         204 -> "No Content"
+        400 -> "Bad Request"
         404 -> "Not Found"
         500 -> "Internal Server Error"
         else -> "Unknown"
