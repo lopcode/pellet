@@ -44,7 +44,7 @@ publishing {
             from(components["java"])
             pom {
                 name.set("Pellet Logging")
-                description.set("An opinionated Kotlin web framework, with best-practices built-in")
+                description.set("An opinionated Kotlin-first web framework that helps you write fast, concise, and correct backend services 🚀.")
                 url.set("https://github.com/CarrotCodes/Pellet")
                 licenses {
                     license {
