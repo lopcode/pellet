@@ -11,8 +11,8 @@ repositories {
 }
 
 dependencies {
-//    implementation("dev.pellet:pellet-server:0.0.2")
-//    implementation("dev.pellet:pellet-logging:0.0.2")
+//    implementation("dev.pellet:pellet-server:0.0.3")
+//    implementation("dev.pellet:pellet-logging:0.0.3")
 
     // Local development:
     implementation(project(":logging"))
