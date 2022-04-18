@@ -31,7 +31,7 @@ fun main() = runBlocking {
         get("/v1/error", ::handleForceError)
     }
     val pellet = pelletServer {
-        logRequests = true
+        logRequests = false
         httpConnector {
             endpoint = PelletConnector.Endpoint(
                 hostname = "localhost",
