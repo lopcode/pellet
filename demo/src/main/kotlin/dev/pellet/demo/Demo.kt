@@ -8,6 +8,7 @@ import dev.pellet.server.PelletConnector
 import dev.pellet.server.responder.http.PelletHTTPRouteContext
 import dev.pellet.server.routing.http.HTTPRouteResponse
 import dev.pellet.server.routing.http.PelletHTTPRoutePath
+import dev.pellet.server.routing.stringDescriptor
 import dev.pellet.server.routing.uuidDescriptor
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -16,6 +17,7 @@ object Demo
 
 val logger = pelletLogger<Demo>()
 val idDescriptor = uuidDescriptor("id")
+val suffixDescriptor = stringDescriptor("suffix")
 
 fun main() = runBlocking {
     val helloIdPath = PelletHTTPRoutePath.Builder()
@@ -107,7 +109,7 @@ private suspend fun handleNamedResponseBody(
     context: PelletHTTPRouteContext
 ): HTTPRouteResponse {
     val id = context.pathParameter(idDescriptor).getOrThrow()
-    val suffix = context.firstQueryParameter("suffix").getOrNull()
+    val suffix = context.firstQueryParameter(suffixDescriptor).getOrNull()
         ?: "👋"
     val responseBody = ResponseBody(hello = "$id $suffix")
     return HTTPRouteResponse.Builder()

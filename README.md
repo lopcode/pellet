@@ -127,6 +127,7 @@ X-Hello: World
 Pellet supports type-safe route building and variable matching:
 ```kotlin
 val idDescriptor = uuidDescriptor("id")
+val suffixDescriptor = stringDescriptor("suffix")
 val helloIdPath = PelletHTTPRoutePath.Builder()
     .addComponents("/v1")
     .addVariable(idDescriptor)
@@ -139,7 +140,7 @@ data class ResponseBody(
 router {
     get(helloIdPath) {
         val id = it.pathParameter(idDescriptor).getOrThrow()
-        val suffix = context.firstQueryParameter("suffix").getOrNull()
+        val suffix = it.firstQueryParameter(suffixDescriptor).getOrNull()
             ?: "👋"
         val responseBody = ResponseBody(hello = "$id $suffix")
         return HTTPRouteResponse.Builder()

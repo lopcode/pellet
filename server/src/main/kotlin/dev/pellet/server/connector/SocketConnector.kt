@@ -1,7 +1,6 @@
 package dev.pellet.server.connector
 
 import dev.pellet.logging.pelletLogger
-import dev.pellet.logging.warn
 import dev.pellet.server.CloseReason
 import dev.pellet.server.PelletServerClient
 import dev.pellet.server.buffer.PelletBufferPooling
@@ -11,11 +10,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
-import java.io.IOException
 import java.net.SocketAddress
 import java.nio.channels.AsynchronousChannelGroup
 import java.nio.channels.AsynchronousSocketChannel
-import java.nio.channels.ClosedChannelException
 
 class SocketConnector(
     private val scope: CoroutineScope,
@@ -49,21 +46,13 @@ class SocketConnector(
     ) {
         val buffer = pool.provide()
         while (this.isActive) {
-            val numberBytesRead = try {
+            val numberBytesRead = this@SocketConnector.runCatching {
                 socketChannel.awaitRead(buffer)
-            } catch (exception: ClosedChannelException) {
+            }.getOrElse {
                 close(
                     client,
                     codec,
-                    CloseReason.ServerException(exception)
-                )
-                return
-            } catch (exception: IOException) {
-                logger.warn(exception) { "failed to read $socketChannel" }
-                close(
-                    client,
-                    codec,
-                    CloseReason.ServerException(exception)
+                    CloseReason.ServerException(it)
                 )
                 return
             }
