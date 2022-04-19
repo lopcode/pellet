@@ -16,6 +16,7 @@ import java.net.InetSocketAddress
 import java.nio.channels.AsynchronousChannelGroup
 import java.util.concurrent.SynchronousQueue
 import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
 import java.util.concurrent.TimeUnit
 
 class PelletServer(
@@ -43,7 +44,8 @@ class PelletServer(
             availableProcessors * 10,
             60L,
             TimeUnit.SECONDS,
-            SynchronousQueue()
+            SynchronousQueue(),
+            CallerRunsPolicy()
         )
         /*
          note: we use a "trampoline" coroutine dispatcher because we expect to launch new coroutines in response to

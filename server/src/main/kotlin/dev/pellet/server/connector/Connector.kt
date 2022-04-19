@@ -1,8 +1,8 @@
 package dev.pellet.server.connector
 
 import dev.pellet.logging.debug
-import dev.pellet.logging.error
 import dev.pellet.logging.pelletLogger
+import dev.pellet.logging.warn
 import dev.pellet.server.extension.awaitAccept
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -10,7 +10,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
-import java.io.IOException
 import java.net.SocketAddress
 import java.nio.channels.AsynchronousChannelGroup
 import java.nio.channels.AsynchronousServerSocketChannel
@@ -37,17 +36,25 @@ fun createSocketAcceptJob(
         start = CoroutineStart.LAZY
     ) {
         while (this.isActive) {
-            val socketChannel = try {
-                serverSocketChannel.awaitAccept()
-            } catch (exception: IOException) {
-                logger.error(exception) { "failed to accept connection" }
-                break
-            }
-
-            launchReadLoop(socketChannel)
-
-            logger.debug { "accepted: $socketChannel" }
+            accept(
+                serverSocketChannel,
+                launchReadLoop
+            )
             yield()
         }
     }
+}
+
+private suspend fun accept(
+    serverSocketChannel: AsynchronousServerSocketChannel,
+    launchReadLoop: suspend (AsynchronousSocketChannel) -> Unit
+) {
+    val socketChannel = runCatching {
+        serverSocketChannel.awaitAccept()
+    }.getOrElse {
+        logger.warn(it) { "failed to accept connection" }
+        return
+    }
+    launchReadLoop(socketChannel)
+    logger.debug { "accepted: $socketChannel" }
 }
