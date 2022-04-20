@@ -3,7 +3,7 @@ import java.net.URI
 
 plugins {
     `java-library`
-    kotlin("plugin.serialization") version "1.6.20"
+    kotlin("plugin.serialization") version "1.6.21"
     id("maven-publish")
     id("signing")
 }
@@ -44,7 +44,7 @@ publishing {
             from(components["java"])
             pom {
                 name.set("Pellet Logging")
-                description.set("An opinionated Kotlin-first web framework that helps you write fast, concise, and correct backend services 🚀.")
+                description.set("An opinionated, Kotlin-first web framework that helps you write fast, concise, and correct backend services 🚀.")
                 url.set("https://github.com/CarrotCodes/Pellet")
                 licenses {
                     license {

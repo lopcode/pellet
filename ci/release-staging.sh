@@ -15,5 +15,6 @@ export SIGNING_KEY_ID="785B1DE054B17BDA"
 export PUBLISHING_URL="https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
 
 ./gradlew clean check
+./gradlew bom:publishMavenBomPublicationToMavenRepository --stacktrace
 ./gradlew logging:publishMavenJavaPublicationToMavenRepository --stacktrace
 ./gradlew server:publishMavenJavaPublicationToMavenRepository --stacktrace

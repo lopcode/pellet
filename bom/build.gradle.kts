@@ -1,27 +1,34 @@
-
-import java.net.URI
-
 plugins {
-    `java-library`
+    `java-platform`
     id("maven-publish")
     id("signing")
 }
 
 group = "dev.pellet"
-val projectTitle = "pellet-server"
-project.setProperty("archivesBaseName", projectTitle)
+val projectTitle = "pellet-bom"
 val environmentVersion = System.getenv("VERSION")
 if (!environmentVersion.isNullOrBlank()) {
     version = environmentVersion.replaceFirst("v", "")
+}
+
+javaPlatform {
+    allowDependencies()
 }
 
 repositories {
     mavenCentral()
 }
 
+val subprojectNames = setOf("server", "logging")
 dependencies {
-    implementation(project(":logging"))
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
+    constraints {
+        project.rootProject.subprojects.forEach { subproject ->
+            if (!subprojectNames.contains(subproject.name)) {
+                return@forEach
+            }
+            api(subproject)
+        }
+    }
 }
 
 val publishingUser = System.getenv("PUBLISHING_USER")
@@ -31,7 +38,7 @@ val publishingUrl = System.getenv("PUBLISHING_URL") ?: ""
 publishing {
     repositories {
         maven {
-            url = URI.create(publishingUrl)
+            url = java.net.URI.create(publishingUrl)
             credentials {
                 username = publishingUser
                 password = publishingPassword
@@ -39,11 +46,11 @@ publishing {
         }
     }
     publications {
-        create<MavenPublication>("mavenJava") {
-            artifactId = "pellet-server"
-            from(components["java"])
+        create<MavenPublication>("mavenBom") {
+            artifactId = "pellet-bom"
+            from(components["javaPlatform"])
             pom {
-                name.set("Pellet Server")
+                name.set("Pellet BOM")
                 description.set("An opinionated, Kotlin-first web framework that helps you write fast, concise, and correct backend services 🚀.")
                 url.set("https://github.com/CarrotCodes/Pellet")
                 licenses {

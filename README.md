@@ -25,8 +25,9 @@ repositories {
 }
 
 dependencies {
-    implementation("dev.pellet:pellet-server:0.0.4")
-    implementation("dev.pellet:pellet-logging:0.0.4")
+    implementation("dev.pellet:pellet-bom:0.0.5")
+    implementation("dev.pellet:pellet-server")
+    implementation("dev.pellet:pellet-logging")
 }
 ```
 
