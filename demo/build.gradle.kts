@@ -1,7 +1,7 @@
 plugins {
     application
     id("com.github.johnrengelman.shadow") version "7.1.0"
-    kotlin("plugin.serialization") version "1.6.20"
+    kotlin("plugin.serialization") version "1.6.21"
 }
 
 group = "dev.pellet"
@@ -11,8 +11,9 @@ repositories {
 }
 
 dependencies {
-//    implementation("dev.pellet:pellet-server:0.0.4")
-//    implementation("dev.pellet:pellet-logging:0.0.4")
+//    implementation("dev.pellet:pellet-bom:0.0.5")
+//    implementation("dev.pellet:pellet-server")
+//    implementation("dev.pellet:pellet-logging")
 
     // Local development:
     implementation(project(":logging"))

@@ -2,7 +2,7 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 
 plugins {
-    kotlin("jvm") version "1.6.20"
+    kotlin("jvm") version "1.6.21"
     id("org.jlleitschuh.gradle.ktlint") version "10.2.0"
     id("maven-publish")
 }
@@ -12,6 +12,10 @@ repositories {
 }
 
 subprojects {
+    if (name.endsWith("bom")) {
+        return@subprojects
+    }
+
     apply(plugin = "org.jetbrains.kotlin.jvm")
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
 
