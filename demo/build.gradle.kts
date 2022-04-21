@@ -11,13 +11,13 @@ repositories {
 }
 
 dependencies {
-//    implementation("dev.pellet:pellet-bom:0.0.5")
-//    implementation("dev.pellet:pellet-server")
-//    implementation("dev.pellet:pellet-logging")
+    implementation(platform("dev.pellet:pellet-bom:0.0.5"))
+    implementation("dev.pellet:pellet-server")
+    implementation("dev.pellet:pellet-logging")
 
     // Local development:
-    implementation(project(":logging"))
-    implementation(project(":server"))
+//    implementation(project(":logging"))
+//    implementation(project(":server"))
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
 
