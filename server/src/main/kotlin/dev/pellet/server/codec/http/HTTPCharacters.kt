@@ -19,7 +19,10 @@ object HTTPCharacters {
     val HORIZONTAL_TAB = 9.toChar()
     val QUOTE = 34.toChar()
     val COLON = 58.toChar()
+    val SEMICOLON = 59.toChar()
+    val EQUALS = 61.toChar()
     val COMMA = 44.toChar()
+    val FORWARD_SLASH = 47.toChar()
 
     val LWS_CHARS = setOf(SPACE, HORIZONTAL_TAB)
 

@@ -98,15 +98,6 @@ private fun buildEffectiveResponse(
                     original.entity.buffer.limit().toString(10)
                 )
             )
-        val contentType = original.entity.contentType
-        if (contentType != null) {
-            headers.add(
-                HTTPHeader(
-                    HTTPHeaderConstants.contentType,
-                    contentType
-                )
-            )
-        }
         val effectiveResponse = original.copy(
             headers = headers
         )

@@ -1,7 +1,12 @@
 package dev.pellet.server.routing.http
 
+import dev.pellet.server.buffer.PelletBuffer
+import dev.pellet.server.codec.http.ContentType
+import dev.pellet.server.codec.http.ContentTypeSerialiser
+import dev.pellet.server.codec.http.ContentTypes
 import dev.pellet.server.codec.http.HTTPEntity
 import dev.pellet.server.codec.http.HTTPHeader
+import dev.pellet.server.codec.http.HTTPHeaderConstants
 import dev.pellet.server.codec.http.HTTPHeaders
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -33,25 +38,25 @@ data class HTTPRouteResponse(
 
         fun noContent(): Builder {
             statusCode = 204
-            entity = HTTPEntity.NoContent
+            setNoContent()
             return this
         }
 
         fun notFound(): Builder {
             statusCode = 404
-            entity = HTTPEntity.NoContent
+            setNoContent()
             return this
         }
 
         fun internalServerError(): Builder {
             statusCode = 500
-            entity = HTTPEntity.NoContent
+            setNoContent()
             return this
         }
 
         fun badRequest(): Builder {
             statusCode = 400
-            entity = HTTPEntity.NoContent
+            setNoContent()
             return this
         }
 
@@ -62,18 +67,21 @@ data class HTTPRouteResponse(
 
         fun entity(
             byteBuffer: ByteBuffer,
-            contentType: String
+            contentType: ContentType
         ): Builder {
-            this.entity = HTTPEntity.Content.of(byteBuffer, contentType)
+            this.entity = HTTPEntity.Content(PelletBuffer(byteBuffer))
+            val contentTypeHeaderValue = ContentTypeSerialiser.serialise(contentType)
+            this.headers[HTTPHeaderConstants.contentType] = contentTypeHeaderValue
             return this
         }
 
         fun entity(
             entity: String,
-            contentType: String
+            contentType: ContentType
         ): Builder {
-            this.entity = HTTPEntity.Content.of(entity, contentType = contentType)
-            return this
+            val charset = contentType.charset() ?: Charsets.UTF_8
+            val byteBuffer = charset.encode(entity)
+            return this.entity(byteBuffer, contentType)
         }
 
         inline fun <reified T> jsonEntity(
@@ -81,7 +89,7 @@ data class HTTPRouteResponse(
             value: T
         ): Builder {
             val encodedResponse = encoder.encodeToString(value)
-            val contentType = "application/json; charset=utf-8"
+            val contentType = ContentTypes.Application.JSON
             this.entity(encodedResponse, contentType)
             return this
         }
@@ -96,6 +104,12 @@ data class HTTPRouteResponse(
                 entity = entity
             )
             return response
+        }
+
+        private fun setNoContent() {
+            entity = HTTPEntity.NoContent
+            this.headers -= HTTPHeaderConstants.contentType
+            this.headers -= HTTPHeaderConstants.contentLength
         }
     }
 }

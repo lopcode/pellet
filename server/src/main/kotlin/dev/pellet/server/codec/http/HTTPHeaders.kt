@@ -6,8 +6,25 @@ data class HTTPHeaders(
     private val storage: MutableMap<String, MutableList<HTTPHeader>> = mutableMapOf()
 ) {
 
+    operator fun set(headerName: String, value: String) {
+        add(
+            HTTPHeader(
+                rawName = headerName,
+                rawValue = value
+            )
+        )
+    }
+
+    operator fun get(headerName: String): HTTPHeader? {
+        return getSingleOrNull(headerName)
+    }
+
+    operator fun minusAssign(headerName: String) {
+        remove(headerName)
+    }
+
     fun getSingleOrNull(headerName: String): HTTPHeader? {
-        val headers = get(headerName)
+        val headers = getAll(headerName)
         if (headers.size != 1) {
             return null
         }
@@ -15,7 +32,7 @@ data class HTTPHeaders(
         return headers.firstOrNull()
     }
 
-    fun get(headerName: String): List<HTTPHeader> {
+    fun getAll(headerName: String): List<HTTPHeader> {
         val normalisedName = normaliseName(headerName)
         return storage[normalisedName] ?: listOf()
     }
@@ -25,6 +42,12 @@ data class HTTPHeaders(
         val list = storage[normalisedName] ?: mutableListOf()
         list.add(header)
         storage[normalisedName] = list
+        return this
+    }
+
+    fun remove(headerName: String): HTTPHeaders {
+        val normalisedName = normaliseName(headerName)
+        storage -= normalisedName
         return this
     }
 

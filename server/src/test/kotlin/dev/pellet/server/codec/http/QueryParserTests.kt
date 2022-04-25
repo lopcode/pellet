@@ -1,9 +1,10 @@
 package dev.pellet.server.codec.http
 
+import dev.pellet.assertFailure
+import dev.pellet.assertSuccess
 import dev.pellet.server.codec.http.query.QueryParameters
 import dev.pellet.server.codec.http.query.QueryParser
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class QueryParserTests {
 
@@ -97,20 +98,5 @@ class QueryParserTests {
             val result = QueryParser.parseEncodedQuery(query)
             assertFailure(result)
         }
-    }
-
-    private fun assertSuccess(
-        expected: QueryParameters,
-        actual: Result<QueryParameters>
-    ) {
-        val result = actual.getOrThrow()
-        assertEquals(expected, result)
-    }
-
-    private fun assertFailure(
-        actual: Result<QueryParameters>
-    ) {
-        actual.exceptionOrNull()
-            ?: throw java.lang.AssertionError("expected a failure: $actual")
     }
 }
