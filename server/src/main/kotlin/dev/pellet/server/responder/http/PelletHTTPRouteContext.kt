@@ -1,16 +1,30 @@
 package dev.pellet.server.responder.http
 
 import dev.pellet.server.PelletServerClient
+import dev.pellet.server.codec.ParseException
+import dev.pellet.server.codec.http.ContentType
+import dev.pellet.server.codec.http.ContentTypes
+import dev.pellet.server.codec.http.HTTPEntity
 import dev.pellet.server.codec.http.HTTPRequestMessage
+import dev.pellet.server.codec.http.matches
 import dev.pellet.server.codec.http.query.QueryParameters
+import dev.pellet.server.extension.ByteBufferInputStream
 import dev.pellet.server.routing.RouteVariableDescriptor
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromStream
 
 data class PelletHTTPRouteContext(
     val rawMessage: HTTPRequestMessage,
+    val entity: EntityContext?,
     internal val client: PelletServerClient,
     internal val pathValueMap: Map<String, String>,
     internal val queryParameters: QueryParameters
 ) {
+
+    data class EntityContext(
+        val rawEntity: HTTPEntity.Content,
+        val contentType: ContentType
+    )
 
     fun <T : Any> pathParameter(
         descriptor: RouteVariableDescriptor<T>
@@ -86,6 +100,27 @@ data class PelletHTTPRouteContext(
                 } else {
                     descriptor.deserialiser.invoke(rawValue)
                 }
+            }
+        }
+    }
+
+    inline fun <reified T : Any> decodeRequestBody(
+        decoder: Json
+    ): Result<T> {
+        if (entity == null) {
+            return Result.failure(
+                ParseException("no entity")
+            )
+        }
+        val rawEntity = entity.rawEntity
+        if (!entity.contentType.matches(ContentTypes.Application.JSON)) {
+            return Result.failure(
+                ParseException("not a JSON entity body")
+            )
+        }
+        return runCatching {
+            ByteBufferInputStream(rawEntity.buffer.byteBuffer).use {
+                decoder.decodeFromStream(it)
             }
         }
     }

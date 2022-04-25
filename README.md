@@ -97,13 +97,13 @@ Pellet integrates nicely with `kotlinx.serialization`. For example, you can defi
 ```kotlin
 @kotlinx.serialization.Serializable
 data class ResponseBody(
-    val hello: String
+    val message: String
 )
 
 private suspend fun handleResponseBody(
     context: PelletHTTPRouteContext
 ): HTTPRouteResponse {
-    val responseBody = ResponseBody(hello = "world 🌎")
+    val responseBody = ResponseBody(message = "hello, world 🌎")
     return HTTPRouteResponse.Builder()
         .statusCode(200)
         .jsonEntity(Json, responseBody)
@@ -116,12 +116,12 @@ Which will respond like so:
 ```
 🥕 carrot 🗂 ~/git/pellet $ http localhost:8082/v1/hello
 HTTP/1.1 200 OK
-Content-Length: 22
-Content-Type: application/json; charset=utf-8
+Content-Length: 31
+Content-Type: application/json
 X-Hello: World
 
 {
-    "hello": "world 🌎"
+    "message": "hello, world 🌎"
 }
 ```
 
@@ -136,14 +136,14 @@ val helloIdPath = PelletHTTPRoutePath.Builder()
     .build()
 @kotlinx.serialization.Serializable
 data class ResponseBody(
-    val hello: String
+    val message: String
 )
 router {
     get(helloIdPath) {
         val id = it.pathParameter(idDescriptor).getOrThrow()
         val suffix = it.firstQueryParameter(suffixDescriptor).getOrNull()
             ?: "👋"
-        val responseBody = ResponseBody(hello = "$id $suffix")
+        val responseBody = ResponseBody(message = "hello $id $suffix")
         return HTTPRouteResponse.Builder()
             .statusCode(200)
             .jsonEntity(Json, responseBody)
@@ -156,20 +156,61 @@ Which will respond like so:
 ```
 🥕 carrot 🗂 ~/git/pellet $ http localhost:8082/v1/06b39add-2b57-4d58-b084-40afeacab2e9/hello
 HTTP/1.1 200 OK
-Content-Length: 53
-Content-Type: application/json; charset=utf-8
+Content-Length: 61
+Content-Type: application/json
 
 {
-    "hello": "06b39add-2b57-4d58-b084-40afeacab2e9 👋"
+    "message": "hello 06b39add-2b57-4d58-b084-40afeacab2e9 👋"
 }
 
 🥕 carrot 🗂 ~/git/pellet $ http localhost:8082/v1/06b39add-2b57-4d58-b084-40afeacab2e9/hello\?suffix=🥕
 HTTP/1.1 200 OK
-Content-Length: 53
-Content-Type: application/json; charset=utf-8
+Content-Length: 61
+Content-Type: application/json
 
 {
-    "hello": "06b39add-2b57-4d58-b084-40afeacab2e9 🥕"
+    "message": "hello 06b39add-2b57-4d58-b084-40afeacab2e9 🥕"
+}
+```
+
+It's easy to decode an incoming request body:
+```kotlin
+@kotlinx.serialization.Serializable
+data class RequestBody(
+    val message: String
+)
+@kotlinx.serialization.Serializable
+data class ResponseBody(
+    val message: String
+)
+
+private suspend fun handleEchoRequest(
+    context: PelletHTTPRouteContext
+): HTTPRouteResponse {
+    val requestBody = context.decodeRequestBody<RequestBody>(Json).getOrElse {
+        return HTTPRouteResponse.Builder()
+            .badRequest()
+            .build()
+    }
+    val responseBody = ResponseBody(
+        message = requestBody.message
+    )
+    return HTTPRouteResponse.Builder()
+        .jsonEntity(Json, responseBody)
+        .build()
+}
+```
+
+Which will echo the (well-formed) request like so:
+
+```
+🥕 carrot 🗂 ~/git/pellet $ http POST localhost:8082/v1/echo message="hello, world 🥕"
+HTTP/1.1 200 OK
+Content-Length: 31
+Content-Type: application/json
+
+{
+    "message": "hello, world 🥕"
 }
 ```
 

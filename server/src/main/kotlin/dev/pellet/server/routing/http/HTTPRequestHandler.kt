@@ -1,6 +1,7 @@
 package dev.pellet.server.routing.http
 
 import dev.pellet.logging.PelletLogElements
+import dev.pellet.logging.debug
 import dev.pellet.logging.error
 import dev.pellet.logging.info
 import dev.pellet.logging.logElements
@@ -9,6 +10,8 @@ import dev.pellet.server.CloseReason
 import dev.pellet.server.PelletServerClient
 import dev.pellet.server.buffer.PelletBufferPooling
 import dev.pellet.server.codec.CodecHandler
+import dev.pellet.server.codec.http.ContentTypeParser
+import dev.pellet.server.codec.http.HTTPEntity
 import dev.pellet.server.codec.http.HTTPHeader
 import dev.pellet.server.codec.http.HTTPHeaderConstants
 import dev.pellet.server.codec.http.HTTPRequestMessage
@@ -88,8 +91,31 @@ internal class HTTPRequestHandler(
                 .badRequest()
                 .build()
         }
-
-        val context = PelletHTTPRouteContext(rawMessage, client, valueMap, queryParameters)
+        val entityContext = when (rawMessage.entity) {
+            is HTTPEntity.Content -> {
+                val contentTypeHeader = rawMessage
+                    .headers[HTTPHeaderConstants.contentType]
+                    ?.rawValue
+                if (contentTypeHeader == null) {
+                    logger.debug { "got an entity but didn't receive a content type" }
+                    return HTTPRouteResponse.Builder()
+                        .badRequest()
+                        .build()
+                }
+                val contentType = ContentTypeParser.parse(contentTypeHeader).getOrElse {
+                    logger.debug { "received a malformed content type" }
+                    return HTTPRouteResponse.Builder()
+                        .badRequest()
+                        .build()
+                }
+                PelletHTTPRouteContext.EntityContext(
+                    rawEntity = rawMessage.entity,
+                    contentType = contentType
+                )
+            }
+            else -> null
+        }
+        val context = PelletHTTPRouteContext(rawMessage, entityContext, client, valueMap, queryParameters)
         val routeResult = runCatching {
             route.handler.handle(context)
         }

@@ -29,7 +29,7 @@ fun main() = runBlocking {
         get("/", ::handleRequest)
         get("/v1/hello", ::handleResponseBody)
         get(helloIdPath, ::handleNamedResponseBody)
-        post("/v1/hello", ::handleRequest)
+        post("/v1/echo", ::handleEchoRequest)
         get("/v1/error", ::handleForceError)
     }
     val pellet = pelletServer {
@@ -83,21 +83,46 @@ private suspend fun handleRequest(
         .build()
 }
 
+@kotlinx.serialization.Serializable
+data class RequestBody(
+    val message: String
+)
+
+@kotlinx.serialization.Serializable
+data class ResponseBody(
+    val message: String
+)
+
+private suspend fun handleEchoRequest(
+    context: PelletHTTPRouteContext
+): HTTPRouteResponse {
+    logger.debug { "got echo POST request: ${context.rawMessage}" }
+
+    val requestBody = context.decodeRequestBody<RequestBody>(Json).getOrElse {
+        logger.debug(it) { "failed to decode json body" }
+
+        return HTTPRouteResponse.Builder()
+            .badRequest()
+            .build()
+    }
+    val responseBody = ResponseBody(
+        message = requestBody.message
+    )
+    return HTTPRouteResponse.Builder()
+        .jsonEntity(Json, responseBody)
+        .build()
+}
+
 private suspend fun handleForceError(
     context: PelletHTTPRouteContext
 ): HTTPRouteResponse {
     throw RuntimeException("intentional error")
 }
 
-@kotlinx.serialization.Serializable
-data class ResponseBody(
-    val hello: String
-)
-
 private suspend fun handleResponseBody(
     context: PelletHTTPRouteContext
 ): HTTPRouteResponse {
-    val responseBody = ResponseBody(hello = "world 🌎")
+    val responseBody = ResponseBody(message = "hello, world 🌎")
     return HTTPRouteResponse.Builder()
         .statusCode(200)
         .jsonEntity(Json, responseBody)
@@ -111,10 +136,9 @@ private suspend fun handleNamedResponseBody(
     val id = context.pathParameter(idDescriptor).getOrThrow()
     val suffix = context.firstQueryParameter(suffixDescriptor).getOrNull()
         ?: "👋"
-    val responseBody = ResponseBody(hello = "$id $suffix")
+    val responseBody = ResponseBody(message = "hello $id $suffix")
     return HTTPRouteResponse.Builder()
         .statusCode(200)
         .jsonEntity(Json, responseBody)
-        .header("X-Hello", "World")
         .build()
 }
