@@ -3,58 +3,50 @@ package dev.pellet.server.connector
 import dev.pellet.logging.debug
 import dev.pellet.logging.pelletLogger
 import dev.pellet.logging.warn
-import dev.pellet.server.extension.awaitAccept
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
 import java.net.SocketAddress
-import java.nio.channels.AsynchronousChannelGroup
-import java.nio.channels.AsynchronousServerSocketChannel
-import java.nio.channels.AsynchronousSocketChannel
+import java.nio.channels.ServerSocketChannel
+import java.nio.channels.SocketChannel
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 
 private val logger = pelletLogger("Connector")
 
 interface Connector {
 
-    fun createAcceptJob(): Job
+    fun createAcceptJob(): CompletableFuture<Void>
 }
 
 fun createSocketAcceptJob(
-    scope: CoroutineScope,
-    group: AsynchronousChannelGroup,
+    executorService: ExecutorService,
     socketAddress: SocketAddress,
-    launchReadLoop: suspend (AsynchronousSocketChannel) -> Unit
-): Job {
-    val unboundSocket = AsynchronousServerSocketChannel.open(group)
+    launchReadLoop: (SocketChannel) -> Unit
+): CompletableFuture<Void> {
+    val unboundSocket = ServerSocketChannel.open()
     val serverSocketChannel = unboundSocket.bind(socketAddress)
     logger.debug { "socket opened: $socketAddress" }
 
-    return scope.launch(
-        start = CoroutineStart.LAZY
-    ) {
-        while (this.isActive) {
+    return CompletableFuture.supplyAsync({
+        while (!Thread.currentThread().isInterrupted) {
             accept(
                 serverSocketChannel,
                 launchReadLoop
             )
-            yield()
         }
-    }
+        null
+    }, executorService)
 }
 
-private suspend fun accept(
-    serverSocketChannel: AsynchronousServerSocketChannel,
-    launchReadLoop: suspend (AsynchronousSocketChannel) -> Unit
-) {
+private fun accept(
+    serverSocketChannel: ServerSocketChannel,
+    launchReadLoop: (SocketChannel) -> Unit
+): Void? {
     val socketChannel = runCatching {
-        serverSocketChannel.awaitAccept()
+        serverSocketChannel.accept()
     }.getOrElse {
         logger.warn(it) { "failed to accept connection" }
-        return
+        return null
     }
     launchReadLoop(socketChannel)
     logger.debug { "accepted: $socketChannel" }
+    return null
 }

@@ -50,6 +50,7 @@ fun main() = runBlocking {
         }
     }
     pellet.start().join()
+    Unit
 }
 
 fun simpleMain() = runBlocking {

@@ -4,20 +4,21 @@ import dev.pellet.logging.info
 import dev.pellet.logging.pelletLogger
 import dev.pellet.server.buffer.AlwaysAllocatingPelletBufferPool
 import dev.pellet.server.codec.http.HTTPMessageCodec
+import dev.pellet.server.codec.http.HTTPRequestMessage
 import dev.pellet.server.connector.SocketConnector
 import dev.pellet.server.metrics.PelletTimer
 import dev.pellet.server.routing.http.HTTPRequestHandler
 import dev.pellet.server.routing.http.HTTPRouting
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import java.net.InetSocketAddress
-import java.nio.channels.AsynchronousChannelGroup
-import java.util.concurrent.SynchronousQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 class PelletServer(
     private val logRequests: Boolean,
@@ -28,7 +29,7 @@ class PelletServer(
     private val writePool = AlwaysAllocatingPelletBufferPool(4096)
     private val readPool = AlwaysAllocatingPelletBufferPool(4096)
 
-    fun start(): Job {
+    fun start(): CompletableFuture<Void> {
         if (connectors.isEmpty()) {
             throw RuntimeException("Please define at least one connector")
         }
@@ -38,35 +39,15 @@ class PelletServer(
         logger.info { "Pellet server starting..." }
         logger.info { "Get help, give feedback, and support development at https://www.pellet.dev" }
 
-        val availableProcessors = Runtime.getRuntime().availableProcessors()
-        val executors = ThreadPoolExecutor(
-            availableProcessors,
-            availableProcessors * 10,
-            60L,
-            TimeUnit.SECONDS,
-            SynchronousQueue(),
-            CallerRunsPolicy()
-        )
-        /*
-         note: we use a "trampoline" coroutine dispatcher because we expect to launch new coroutines in response to
-         asynchronous socket acceptance, reading, and writing - which are already executed on a bounded thread pool
-         (see above).
-         scheduling these jobs using a different dispatcher adds a costly context switch and doesn't provide any benefit
-         that I can see right now - worth verifying though
-         */
+        val executors = Executors.newVirtualThreadPerTaskExecutor()
         val dispatcher = Dispatchers.Unconfined
-        val group = AsynchronousChannelGroup.withThreadPool(executors)
         val supervisorContext = SupervisorJob()
         val scope = CoroutineScope(dispatcher + supervisorContext)
 
         val connectorJobs = connectors.map {
             when (it) {
-                is PelletConnector.HTTP -> createHTTPConnectorJob(it, scope, group)
+                is PelletConnector.HTTP -> createHTTPConnectorJob(it, scope, executors)
             }
-        }
-
-        connectorJobs.forEach { job ->
-            job.start()
         }
 
         supervisorContext.invokeOnCompletion {
@@ -77,20 +58,27 @@ class PelletServer(
         val startupMs = startupDuration.toMillis()
         logger.info { "Pellet started in ${startupMs}ms" }
 
-        return supervisorContext
+        return CompletableFuture.allOf(*connectorJobs.toTypedArray())
     }
 
     private fun createHTTPConnectorJob(
         spec: PelletConnector.HTTP,
         scope: CoroutineScope,
-        group: AsynchronousChannelGroup
-    ): Job {
+        executorService: ExecutorService
+    ): CompletableFuture<Void> {
         logger.info { "Starting connector: $spec" }
         validateAndPrintRoutes(spec.router)
         val connectorAddress = InetSocketAddress(spec.endpoint.hostname, spec.endpoint.port)
-        val connector = SocketConnector(scope, group, connectorAddress, writePool) { client ->
+        val connector = SocketConnector(scope, executorService, connectorAddress, writePool) { client ->
             val output = HTTPRequestHandler(client, spec.router, writePool, logRequests)
-            val codec = HTTPMessageCodec(output, readPool)
+            val channel = Channel<HTTPRequestMessage>()
+            val codec = HTTPMessageCodec(channel, readPool)
+            scope.launch {
+                while (this.isActive) {
+                    val message = channel.receive()
+                    output.handle(message)
+                }
+            }
             codec
         }
         return connector.createAcceptJob()

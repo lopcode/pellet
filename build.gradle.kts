@@ -30,7 +30,10 @@ subprojects {
     }
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions.jvmTarget = "17"
+        kotlinOptions {
+            jvmTarget = "17"
+            freeCompilerArgs += "-Xlambdas=indy"
+        }
     }
 
     sourceSets.create("integrationTest") {

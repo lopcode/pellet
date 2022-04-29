@@ -5,18 +5,14 @@ import dev.pellet.server.CloseReason
 import dev.pellet.server.PelletServerClient
 import dev.pellet.server.buffer.PelletBufferPooling
 import dev.pellet.server.codec.Codec
-import dev.pellet.server.extension.awaitRead
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
 import java.net.SocketAddress
-import java.nio.channels.AsynchronousChannelGroup
-import java.nio.channels.AsynchronousSocketChannel
+import java.nio.channels.SocketChannel
+import java.util.concurrent.ExecutorService
 
 class SocketConnector(
     private val scope: CoroutineScope,
-    private val group: AsynchronousChannelGroup,
+    private val executorService: ExecutorService,
     private val socketAddress: SocketAddress,
     private val pool: PelletBufferPooling,
     private val codecFactory: (PelletServerClient) -> Codec
@@ -25,29 +21,28 @@ class SocketConnector(
     private val logger = pelletLogger<SocketConnector>()
 
     override fun createAcceptJob() = createSocketAcceptJob(
-        scope,
-        group,
+        executorService,
         socketAddress,
         this::launchReadLoop
     )
 
     private fun launchReadLoop(
-        socketChannel: AsynchronousSocketChannel
-    ) = scope.launch {
+        socketChannel: SocketChannel
+    ) = executorService.execute {
         val client = PelletServerClient(socketChannel, pool)
         val codec = codecFactory(client)
         readLoop(client, codec, socketChannel)
     }
 
-    private suspend fun CoroutineScope.readLoop(
+    private fun readLoop(
         client: PelletServerClient,
         codec: Codec,
-        socketChannel: AsynchronousSocketChannel
+        socketChannel: SocketChannel
     ) {
         val buffer = pool.provide()
-        while (this.isActive) {
+        while (!Thread.currentThread().isInterrupted) {
             val numberBytesRead = this@SocketConnector.runCatching {
-                socketChannel.awaitRead(buffer)
+                socketChannel.read(buffer.byteBuffer)
             }.getOrElse {
                 close(
                     client,
@@ -68,8 +63,6 @@ class SocketConnector(
             val bytesToConsume = buffer.flip()
             codec.consume(bytesToConsume)
             buffer.clear()
-
-            yield()
         }
     }
 

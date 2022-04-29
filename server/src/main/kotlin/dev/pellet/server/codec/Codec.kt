@@ -13,5 +13,5 @@ interface Codec {
 
     fun clear()
     fun release()
-    suspend fun consume(buffer: PelletBuffer)
+    fun consume(buffer: PelletBuffer)
 }

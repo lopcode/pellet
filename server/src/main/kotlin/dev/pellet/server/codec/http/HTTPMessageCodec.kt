@@ -5,18 +5,19 @@ import dev.pellet.logging.pelletLogger
 import dev.pellet.server.buffer.PelletBuffer
 import dev.pellet.server.buffer.PelletBufferPooling
 import dev.pellet.server.codec.Codec
-import dev.pellet.server.codec.CodecHandler
 import dev.pellet.server.extension.advance
 import dev.pellet.server.extension.nextPositionOfOrNull
 import dev.pellet.server.extension.stringifyAndClear
 import dev.pellet.server.extension.trimLWS
 import dev.pellet.server.extension.trimTrailing
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.trySendBlocking
 import java.net.URI
 import java.util.Locale
 import kotlin.math.min
 
 internal class HTTPMessageCodec(
-    private val output: CodecHandler<HTTPRequestMessage>,
+    private val output: Channel<HTTPRequestMessage>,
     private val pool: PelletBufferPooling
 ) : Codec {
 
@@ -75,7 +76,7 @@ internal class HTTPMessageCodec(
         pool.release(chunkLineBuffer)
     }
 
-    override suspend fun consume(buffer: PelletBuffer) {
+    override fun consume(buffer: PelletBuffer) {
         readLoop@ while (buffer.hasRemaining()) {
             when (state) {
                 ConsumeState.REQUEST_LINE -> {
@@ -92,7 +93,7 @@ internal class HTTPMessageCodec(
 
                     handleHeaderLine()
                     if (state == ConsumeState.REQUEST_LINE) {
-                        output.handle(buildMessage())
+                        output.trySendBlocking(buildMessage())
                     }
                 }
                 ConsumeState.FIXED_ENTITY -> {
@@ -101,7 +102,7 @@ internal class HTTPMessageCodec(
                     }
 
                     handleFixedEntity()
-                    output.handle(buildMessage())
+                    output.trySendBlocking(buildMessage())
                 }
                 ConsumeState.CHUNKED_ENTITY -> {
                     when (chunkState) {
@@ -129,7 +130,7 @@ internal class HTTPMessageCodec(
 
                             logger.debug { "read chunk end line" }
                             handleChunkedEntity()
-                            output.handle(buildMessage())
+                            output.trySendBlocking(buildMessage())
                         }
                     }
                 }

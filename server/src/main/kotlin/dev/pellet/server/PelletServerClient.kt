@@ -4,10 +4,9 @@ import dev.pellet.logging.debug
 import dev.pellet.logging.pelletLogger
 import dev.pellet.server.buffer.PelletBuffer
 import dev.pellet.server.buffer.PelletBufferPooling
-import dev.pellet.server.extension.awaitWrite
 import java.net.InetSocketAddress
 import java.net.UnixDomainSocketAddress
-import java.nio.channels.AsynchronousSocketChannel
+import java.nio.channels.SocketChannel
 
 sealed class CloseReason {
 
@@ -17,7 +16,7 @@ sealed class CloseReason {
 }
 
 class PelletServerClient(
-    private val socket: AsynchronousSocketChannel,
+    private val socket: SocketChannel,
     private val pool: PelletBufferPooling
 ) {
 
@@ -32,9 +31,9 @@ class PelletServerClient(
             }
         }
 
-    suspend fun writeAndRelease(buffer: PelletBuffer): Result<Int> {
+    fun writeAndRelease(buffer: PelletBuffer): Result<Int> {
         val result = runCatching {
-            socket.awaitWrite(buffer.byteBuffer)
+            socket.write(buffer.byteBuffer)
         }
         pool.release(buffer)
         return result
