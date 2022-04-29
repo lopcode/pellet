@@ -18,6 +18,7 @@ import java.util.concurrent.SynchronousQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
 import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
 
 class PelletServer(
     private val logRequests: Boolean,
@@ -39,9 +40,10 @@ class PelletServer(
         logger.info { "Get help, give feedback, and support development at https://www.pellet.dev" }
 
         val availableProcessors = Runtime.getRuntime().availableProcessors()
+        val maximumThreadCount = calculateMaximumThreadCount()
         val executors = ThreadPoolExecutor(
             availableProcessors,
-            availableProcessors * 10,
+            maximumThreadCount,
             60L,
             TimeUnit.SECONDS,
             SynchronousQueue(),
@@ -101,5 +103,15 @@ class PelletServer(
             throw RuntimeException("routes must be defined before starting a connector")
         }
         logger.info { "Routes: \n${router.routes.joinToString("\n")}" }
+    }
+
+    private fun calculateMaximumThreadCount(): Int {
+        val numberOfCores = Runtime.getRuntime().availableProcessors()
+        val waitTime = 50 // ms
+        val processingTime = 5 // ms
+        val threadCount = numberOfCores * (1 + (waitTime / processingTime.toDouble()))
+        return threadCount
+            .roundToInt()
+            .coerceIn(numberOfCores, 1000)
     }
 }
