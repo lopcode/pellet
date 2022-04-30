@@ -1,7 +1,6 @@
 package dev.pellet.server.routing.http
 
 import dev.pellet.logging.pelletLogger
-import dev.pellet.logging.warn
 import dev.pellet.server.codec.http.HTTPRequestMessage
 
 class PelletHTTPRouter : HTTPRouting {
