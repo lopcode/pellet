@@ -17,87 +17,88 @@ public interface PelletLogging {
         elementsBuilder: (() -> PelletLogElements)? = null,
         messageBuilder: () -> String
     )
+
     fun log(
         level: PelletLogLevel,
         throwable: Throwable? = null,
         elementsBuilder: (() -> PelletLogElements)? = null,
         messageBuilder: () -> String
     )
-}
 
-public fun PelletLogging.error(
-    elementsBuilder: (() -> PelletLogElements)? = null,
-    messageBuilder: () -> String
-) {
-    log(PelletLogLevel.ERROR, elementsBuilder, messageBuilder)
-}
+    fun error(
+        elementsBuilder: (() -> PelletLogElements)? = null,
+        messageBuilder: () -> String
+    ) {
+        log(PelletLogLevel.ERROR, elementsBuilder, messageBuilder)
+    }
 
-public fun PelletLogging.error(
-    throwable: Throwable? = null,
-    elementsBuilder: (() -> PelletLogElements)? = null,
-    messageBuilder: () -> String
-) {
-    log(PelletLogLevel.ERROR, throwable, elementsBuilder, messageBuilder)
-}
+    fun error(
+        throwable: Throwable? = null,
+        elementsBuilder: (() -> PelletLogElements)? = null,
+        messageBuilder: () -> String
+    ) {
+        log(PelletLogLevel.ERROR, throwable, elementsBuilder, messageBuilder)
+    }
 
-public fun PelletLogging.warn(
-    elementsBuilder: (() -> PelletLogElements)? = null,
-    messageBuilder: () -> String
-) {
-    log(PelletLogLevel.WARN, elementsBuilder, messageBuilder)
-}
+    fun warn(
+        elementsBuilder: (() -> PelletLogElements)? = null,
+        messageBuilder: () -> String
+    ) {
+        log(PelletLogLevel.WARN, elementsBuilder, messageBuilder)
+    }
 
-public fun PelletLogging.warn(
-    throwable: Throwable? = null,
-    elementsBuilder: (() -> PelletLogElements)? = null,
-    messageBuilder: () -> String
-) {
-    log(PelletLogLevel.WARN, throwable, elementsBuilder, messageBuilder)
-}
+    fun warn(
+        throwable: Throwable? = null,
+        elementsBuilder: (() -> PelletLogElements)? = null,
+        messageBuilder: () -> String
+    ) {
+        log(PelletLogLevel.WARN, throwable, elementsBuilder, messageBuilder)
+    }
 
-public fun PelletLogging.info(
-    elementsBuilder: (() -> PelletLogElements)? = null,
-    messageBuilder: () -> String
-) {
-    log(PelletLogLevel.INFO, elementsBuilder, messageBuilder)
-}
+    fun info(
+        elementsBuilder: (() -> PelletLogElements)? = null,
+        messageBuilder: () -> String
+    ) {
+        log(PelletLogLevel.INFO, elementsBuilder, messageBuilder)
+    }
 
-public fun PelletLogging.info(
-    throwable: Throwable? = null,
-    elementsBuilder: (() -> PelletLogElements)? = null,
-    messageBuilder: () -> String
-) {
-    log(PelletLogLevel.INFO, throwable, elementsBuilder, messageBuilder)
-}
+    fun info(
+        throwable: Throwable? = null,
+        elementsBuilder: (() -> PelletLogElements)? = null,
+        messageBuilder: () -> String
+    ) {
+        log(PelletLogLevel.INFO, throwable, elementsBuilder, messageBuilder)
+    }
 
-public fun PelletLogging.debug(
-    elementsBuilder: (() -> PelletLogElements)? = null,
-    messageBuilder: () -> String
-) {
-    log(PelletLogLevel.DEBUG, elementsBuilder, messageBuilder)
-}
+    fun debug(
+        elementsBuilder: (() -> PelletLogElements)? = null,
+        messageBuilder: () -> String
+    ) {
+        log(PelletLogLevel.DEBUG, elementsBuilder, messageBuilder)
+    }
 
-public fun PelletLogging.debug(
-    throwable: Throwable? = null,
-    elementsBuilder: (() -> PelletLogElements)? = null,
-    messageBuilder: () -> String
-) {
-    log(PelletLogLevel.DEBUG, throwable, elementsBuilder, messageBuilder)
-}
+    fun debug(
+        throwable: Throwable? = null,
+        elementsBuilder: (() -> PelletLogElements)? = null,
+        messageBuilder: () -> String
+    ) {
+        log(PelletLogLevel.DEBUG, throwable, elementsBuilder, messageBuilder)
+    }
 
-public fun PelletLogging.trace(
-    elementsBuilder: (() -> PelletLogElements)? = null,
-    messageBuilder: () -> String
-) {
-    log(PelletLogLevel.TRACE, elementsBuilder, messageBuilder)
-}
+    fun trace(
+        elementsBuilder: (() -> PelletLogElements)? = null,
+        messageBuilder: () -> String
+    ) {
+        log(PelletLogLevel.TRACE, elementsBuilder, messageBuilder)
+    }
 
-public fun PelletLogging.trace(
-    throwable: Throwable? = null,
-    elementsBuilder: (() -> PelletLogElements)? = null,
-    messageBuilder: () -> String
-) {
-    log(PelletLogLevel.TRACE, throwable, elementsBuilder, messageBuilder)
+    fun trace(
+        throwable: Throwable? = null,
+        elementsBuilder: (() -> PelletLogElements)? = null,
+        messageBuilder: () -> String
+    ) {
+        log(PelletLogLevel.TRACE, throwable, elementsBuilder, messageBuilder)
+    }
 }
 
 public fun pelletLogger(

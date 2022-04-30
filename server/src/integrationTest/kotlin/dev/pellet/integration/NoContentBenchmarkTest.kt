@@ -1,6 +1,5 @@
 package dev.pellet.integration
 
-import dev.pellet.logging.info
 import dev.pellet.logging.pelletLogger
 import dev.pellet.server.PelletBuilder.pelletServer
 import dev.pellet.server.PelletConnector

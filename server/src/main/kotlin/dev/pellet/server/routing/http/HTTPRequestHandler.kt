@@ -1,9 +1,6 @@
 package dev.pellet.server.routing.http
 
 import dev.pellet.logging.PelletLogElements
-import dev.pellet.logging.debug
-import dev.pellet.logging.error
-import dev.pellet.logging.info
 import dev.pellet.logging.logElements
 import dev.pellet.logging.pelletLogger
 import dev.pellet.server.CloseReason

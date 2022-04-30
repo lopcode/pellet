@@ -1,6 +1,5 @@
 package dev.pellet.server
 
-import dev.pellet.logging.debug
 import dev.pellet.logging.pelletLogger
 import dev.pellet.server.buffer.PelletBuffer
 import dev.pellet.server.buffer.PelletBufferPooling

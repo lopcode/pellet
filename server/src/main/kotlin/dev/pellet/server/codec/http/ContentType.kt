@@ -8,6 +8,11 @@ typealias ContentTypeParser = MediaTypeParser
 
 object ContentTypes {
 
+    object Text {
+
+        val Plain = ContentType("text", "plain")
+    }
+
     object Application {
 
         val JSON = ContentType(type = "application", subtype = "json")
