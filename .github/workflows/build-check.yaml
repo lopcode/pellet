@@ -33,4 +33,4 @@ jobs:
         with:
           java-version: '17'
       - name: Run checks
-        run: ./gradlew clean integrationTest --rerun-tasks -Dbenchmark.requests.total=100000
+        run: ./gradlew clean integrationTest --rerun-tasks -Dbenchmark.requests.total=10000
