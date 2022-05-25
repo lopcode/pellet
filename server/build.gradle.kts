@@ -3,6 +3,7 @@ import java.net.URI
 
 plugins {
     `java-library`
+    jacoco
     id("maven-publish")
     id("signing")
 }
@@ -22,6 +23,14 @@ repositories {
 dependencies {
     implementation(project(":logging"))
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+}
+
+jacoco {
+    toolVersion = "0.8.8"
 }
 
 val publishingUser = System.getenv("PUBLISHING_USER")
