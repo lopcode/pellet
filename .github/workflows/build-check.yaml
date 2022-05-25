@@ -14,6 +14,13 @@ jobs:
           java-version: '17'
       - name: Run checks
         run: ./gradlew clean check --rerun-tasks
+      - name: Generate coverage report
+        run: ./gradlew jacocoTestReport
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v3
+        with:
+          name: code-coverage-report
+          path: server/build/reports/jacoco/test/html/
   integration-tests:
     name: Run integration tests
     runs-on: ubuntu-20.04
