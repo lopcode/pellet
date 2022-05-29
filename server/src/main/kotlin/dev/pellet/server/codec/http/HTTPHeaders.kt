@@ -6,13 +6,14 @@ data class HTTPHeaders(
     private val storage: MutableMap<String, MutableList<HTTPHeader>> = mutableMapOf()
 ) {
 
-    operator fun set(headerName: String, value: String) {
+    operator fun set(headerName: String, value: String): HTTPHeaders {
         add(
             HTTPHeader(
                 rawName = headerName,
                 rawValue = value
             )
         )
+        return this
     }
 
     operator fun get(headerName: String): HTTPHeader? {

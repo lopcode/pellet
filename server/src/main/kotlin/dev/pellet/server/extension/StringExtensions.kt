@@ -20,7 +20,9 @@ fun CharSequence.isEmptyOrLWS(): Boolean {
     }
 }
 
-// Removes a character if present at both start and end of string
+/**
+ * Removes a character if present at both start and end of string
+ */
 fun String.removeSurrounding(character: Char): String {
     if (!this.startsWith(character)) {
         return this
