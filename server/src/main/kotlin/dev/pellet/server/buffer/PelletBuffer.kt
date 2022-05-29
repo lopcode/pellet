@@ -119,4 +119,18 @@ data class PelletBuffer(
         this.byteBuffer.flip()
         return this
     }
+
+    // todo: investigate how this differs from generated data class equals
+    // was having trouble with assertEquals and identical buffers
+    override fun equals(other: Any?): Boolean {
+        if (other !is PelletBuffer) {
+            return false
+        }
+
+        if (this.used.get() != other.used.get()) {
+            return false
+        }
+
+        return this.byteBuffer == other.byteBuffer
+    }
 }
