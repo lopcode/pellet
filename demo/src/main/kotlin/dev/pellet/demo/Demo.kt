@@ -14,9 +14,9 @@ import kotlinx.serialization.json.Json
 
 object Demo
 
-val logger = pelletLogger<Demo>()
-val idDescriptor = uuidDescriptor("id")
-val suffixDescriptor = stringDescriptor("suffix")
+private val logger = pelletLogger<Demo>()
+private val idDescriptor = uuidDescriptor("id")
+private val suffixDescriptor = stringDescriptor("suffix")
 
 fun main() = runBlocking {
     val helloIdPath = PelletHTTPRoutePath.Builder()
@@ -40,18 +40,11 @@ fun main() = runBlocking {
             )
             router = sharedRouter
         }
-        httpConnector {
-            endpoint = PelletConnector.Endpoint(
-                hostname = "localhost",
-                port = 8083
-            )
-            router = sharedRouter
-        }
     }
     pellet.start().join()
 }
 
-fun simpleMain() = runBlocking {
+private fun simpleMain() = runBlocking {
     val pellet = pelletServer {
         httpConnector {
             endpoint = PelletConnector.Endpoint(
@@ -83,12 +76,12 @@ private suspend fun handleRequest(
 }
 
 @kotlinx.serialization.Serializable
-data class RequestBody(
+private data class RequestBody(
     val message: String
 )
 
 @kotlinx.serialization.Serializable
-data class ResponseBody(
+private data class ResponseBody(
     val message: String
 )
 

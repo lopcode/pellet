@@ -1,6 +1,11 @@
 package dev.pellet.server.codec
 
-interface CodecHandler<T : Any> {
+import dev.pellet.server.PelletServerClient
 
-    suspend fun handle(output: T)
+internal interface CodecHandler<T : Any> {
+
+    suspend fun handle(
+        output: T,
+        client: PelletServerClient
+    )
 }

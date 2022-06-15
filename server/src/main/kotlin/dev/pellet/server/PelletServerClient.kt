@@ -3,10 +3,9 @@ package dev.pellet.server
 import dev.pellet.logging.pelletLogger
 import dev.pellet.server.buffer.PelletBuffer
 import dev.pellet.server.buffer.PelletBufferPooling
-import dev.pellet.server.extension.awaitWrite
+import dev.pellet.server.nio.NIOSocket
 import java.net.InetSocketAddress
 import java.net.UnixDomainSocketAddress
-import java.nio.channels.AsynchronousSocketChannel
 
 sealed class CloseReason {
 
@@ -16,7 +15,7 @@ sealed class CloseReason {
 }
 
 class PelletServerClient(
-    private val socket: AsynchronousSocketChannel,
+    internal val trackedSocket: NIOSocket,
     private val pool: PelletBufferPooling
 ) {
 
@@ -24,25 +23,31 @@ class PelletServerClient(
 
     val remoteHostString: String
         get() {
-            return when (val remoteAddress = socket.remoteAddress) {
+            return when (val remoteAddress = trackedSocket.channel.remoteAddress) {
                 is InetSocketAddress -> remoteAddress.hostString
                 is UnixDomainSocketAddress -> remoteAddress.path.toString()
                 else -> remoteAddress.toString()
             }
         }
 
-    suspend fun writeAndRelease(buffer: PelletBuffer): Result<Int> {
-        val result = runCatching {
-            socket.awaitWrite(buffer.byteBuffer)
+    fun writeAndRelease(buffer: PelletBuffer): Result<Int> {
+        val byteCount = buffer.byteBuffer.remaining()
+        while (buffer.byteBuffer.hasRemaining()) {
+            val attempt = runCatching {
+                trackedSocket.channel.write(buffer.byteBuffer)
+            }
+            if (attempt.isFailure) {
+                return attempt
+            }
         }
         pool.release(buffer)
-        return result
+        return Result.success(byteCount)
     }
 
     fun close(source: CloseReason): Result<Unit> {
-        logger.debug { "closed $socket (initiator: $source)" }
+        logger.debug { "closed ${trackedSocket.channel} (initiator: $source)" }
         return runCatching {
-            socket.close()
+            trackedSocket.channel.close()
         }
     }
 }

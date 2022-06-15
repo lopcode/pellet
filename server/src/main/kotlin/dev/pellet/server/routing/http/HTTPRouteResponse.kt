@@ -8,8 +8,10 @@ import dev.pellet.server.codec.http.HTTPEntity
 import dev.pellet.server.codec.http.HTTPHeader
 import dev.pellet.server.codec.http.HTTPHeaderConstants
 import dev.pellet.server.codec.http.HTTPHeaders
+import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.serializer
 import java.nio.ByteBuffer
 
 data class HTTPRouteResponse(
@@ -84,11 +86,12 @@ data class HTTPRouteResponse(
             return this.entity(byteBuffer, contentType)
         }
 
-        inline fun <reified T> jsonEntity(
+        @OptIn(InternalSerializationApi::class)
+        inline fun <reified T : Any> jsonEntity(
             encoder: Json,
             value: T
         ): Builder {
-            val encodedResponse = encoder.encodeToString(value)
+            val encodedResponse = encoder.encodeToString(T::class.serializer(), value)
             val contentType = ContentTypes.Application.JSON
             this.entity(encodedResponse, contentType)
             return this

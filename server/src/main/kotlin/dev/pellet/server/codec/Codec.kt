@@ -1,5 +1,6 @@
 package dev.pellet.server.codec
 
+import dev.pellet.server.PelletServerClient
 import dev.pellet.server.buffer.PelletBuffer
 
 /**
@@ -13,5 +14,8 @@ interface Codec {
 
     fun clear()
     fun release()
-    suspend fun consume(buffer: PelletBuffer)
+    fun consume(
+        buffer: PelletBuffer,
+        client: PelletServerClient
+    )
 }
