@@ -5,6 +5,7 @@ import dev.pellet.logging.logElements
 import dev.pellet.logging.pelletLogger
 import dev.pellet.server.CloseReason
 import dev.pellet.server.PelletServerClient
+import dev.pellet.server.WriteItem
 import dev.pellet.server.buffer.PelletBufferPooling
 import dev.pellet.server.codec.CodecHandler
 import dev.pellet.server.codec.http.ContentTypeParser
@@ -23,12 +24,13 @@ import java.time.ZoneOffset.UTC
 import java.time.format.DateTimeFormatterBuilder
 import java.time.format.TextStyle
 import java.time.temporal.ChronoField
+import java.util.Queue
 
 internal class HTTPRequestHandler(
-    private val client: PelletServerClient,
     private val router: HTTPRouting,
     private val pool: PelletBufferPooling,
-    private val logRequests: Boolean
+    private val writeQueue: Queue<WriteItem>,
+    private val logRequests: Boolean,
 ) : CodecHandler<HTTPRequestMessage> {
 
     private val timer = PelletTimer()
@@ -58,28 +60,32 @@ internal class HTTPRequestHandler(
         const val responseDurationKey = "response.duration_ms"
     }
 
-    override suspend fun handle(output: HTTPRequestMessage) {
+    override suspend fun handle(
+        output: HTTPRequestMessage,
+        client: PelletServerClient
+    ) {
         timer.reset()
-        val responder = PelletHTTPResponder(client, pool)
+        val responder = PelletHTTPResponder(writeQueue, client, pool)
         val resolvedRoute = router.route(output)
         if (resolvedRoute == null) {
             val response = HTTPRouteResponse.Builder()
                 .notFound()
                 .build()
-            respond(output, response, responder, timer)
+            respond(output, response, responder, client, timer)
         } else {
-            val response = handleRoute(resolvedRoute, output)
-            respond(output, response, responder, timer)
+            val response = handleRoute(resolvedRoute, output, client)
+            respond(output, response, responder, client, timer)
         }
 
         val connectionHeader = output.headers.getSingleOrNull(HTTPHeaderConstants.connection)
-        handleConnectionHeader(connectionHeader)
+        handleConnectionHeader(connectionHeader, client)
         output.release(pool)
     }
 
     private suspend fun handleRoute(
         resolvedRoute: HTTPRouting.ResolvedRoute,
-        rawMessage: HTTPRequestMessage
+        rawMessage: HTTPRequestMessage,
+        client: PelletServerClient
     ): HTTPRouteResponse {
         val (route, valueMap) = resolvedRoute
         val query = rawMessage.requestLine.resourceUri.rawQuery ?: ""
@@ -124,10 +130,11 @@ internal class HTTPRequestHandler(
         }
     }
 
-    private suspend fun respond(
+    private fun respond(
         request: HTTPRequestMessage,
         response: HTTPRouteResponse,
         responder: PelletHTTPResponder,
+        client: PelletServerClient,
         timer: PelletTimer
     ) {
         val message = mapRouteResponseToMessage(response)
@@ -139,7 +146,7 @@ internal class HTTPRequestHandler(
                 add(responseCodeKey, message.statusLine.statusCode)
                 add(responseDurationKey, requestDuration.toMillis())
             }
-            logResponse(request, response, elements)
+            logResponse(request, response, client, elements)
         }
         responder.respond(message)
     }
@@ -147,6 +154,7 @@ internal class HTTPRequestHandler(
     private fun logResponse(
         request: HTTPRequestMessage,
         response: HTTPRouteResponse,
+        client: PelletServerClient,
         elements: () -> PelletLogElements
     ) {
         val dateTime = commonDateFormat.format(Instant.now().atZone(UTC))
@@ -155,7 +163,10 @@ internal class HTTPRequestHandler(
         logger.info(elements) { "${client.remoteHostString} - - [$dateTime] \"$method $uri $version\" ${response.statusCode} $responseSize" }
     }
 
-    private fun handleConnectionHeader(connectionHeader: HTTPHeader?) {
+    private fun handleConnectionHeader(
+        connectionHeader: HTTPHeader?,
+        client: PelletServerClient
+    ) {
         if (connectionHeader == null) {
             // keep alive by default
             return

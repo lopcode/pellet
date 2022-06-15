@@ -1,6 +1,7 @@
 package dev.pellet.server.codec.http
 
 import dev.pellet.logging.pelletLogger
+import dev.pellet.server.PelletServerClient
 import dev.pellet.server.buffer.PelletBuffer
 import dev.pellet.server.buffer.PelletBufferPooling
 import dev.pellet.server.codec.Codec
@@ -10,13 +11,22 @@ import dev.pellet.server.extension.nextPositionOfOrNull
 import dev.pellet.server.extension.stringifyAndClear
 import dev.pellet.server.extension.trimLWS
 import dev.pellet.server.extension.trimTrailing
+import kotlinx.coroutines.CoroutineScope
 import java.net.URI
 import java.util.Locale
+import java.util.Queue
 import kotlin.math.min
+
+data class WorkItem(
+    val message: HTTPRequestMessage,
+    val client: PelletServerClient
+)
 
 internal class HTTPMessageCodec(
     private val output: CodecHandler<HTTPRequestMessage>,
-    private val pool: PelletBufferPooling
+    private val pool: PelletBufferPooling,
+    private val scope: CoroutineScope,
+    private val workQueue: Queue<WorkItem>
 ) : Codec {
 
     private val requestLineBuffer = pool.provide()
@@ -74,7 +84,10 @@ internal class HTTPMessageCodec(
         pool.release(chunkLineBuffer)
     }
 
-    override suspend fun consume(buffer: PelletBuffer) {
+    override fun consume(
+        buffer: PelletBuffer,
+        client: PelletServerClient
+    ) {
         readLoop@ while (buffer.hasRemaining()) {
             when (state) {
                 ConsumeState.REQUEST_LINE -> {
@@ -91,7 +104,30 @@ internal class HTTPMessageCodec(
 
                     handleHeaderLine()
                     if (state == ConsumeState.REQUEST_LINE) {
-                        output.handle(buildMessage())
+                        // todo: short circuit processing to test socket processor throughput
+                        // val response = "HTTP/1.1 204 OK\r\n\r\n"
+                        // val responseBytes = Charsets.UTF_8.encode(response)
+                        // val bytes = PelletBuffer(responseBytes)
+                        // client.writeAndRelease(bytes)
+                        // val responder = PelletHTTPResponder(writeQueue, client, pool)
+                        // responder.respond(
+                        //     HTTPResponseMessage(
+                        //         statusLine = HTTPStatusLine(
+                        //             version = "HTTP/1.1",
+                        //             statusCode = 204,
+                        //             reasonPhrase = "OK"
+                        //         ),
+                        //         headers = HTTPHeaders(),
+                        //         entity = HTTPEntity.NoContent
+                        //     )
+                        // )
+                        workQueue.offer(WorkItem(buildMessage(), client))
+                        // scope.launch {
+                        //     runBlocking {
+                        // output.handle(buildMessage(), client)
+                        // }
+                        // }
+                        // }
                     }
                 }
                 ConsumeState.FIXED_ENTITY -> {
@@ -100,7 +136,10 @@ internal class HTTPMessageCodec(
                     }
 
                     handleFixedEntity()
-                    output.handle(buildMessage())
+                    // scope.launch {
+                    //     output.handle(buildMessage(), client)
+                    // }
+                    workQueue.offer(WorkItem(buildMessage(), client))
                 }
                 ConsumeState.CHUNKED_ENTITY -> {
                     when (chunkState) {
@@ -128,7 +167,10 @@ internal class HTTPMessageCodec(
 
                             logger.debug { "read chunk end line" }
                             handleChunkedEntity()
-                            output.handle(buildMessage())
+                            // scope.launch {
+                            //     output.handle(buildMessage(), client)
+                            // }
+                            workQueue.offer(WorkItem(buildMessage(), client))
                         }
                     }
                 }
