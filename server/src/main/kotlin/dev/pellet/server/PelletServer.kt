@@ -2,22 +2,31 @@ package dev.pellet.server
 
 import dev.pellet.logging.pelletLogger
 import dev.pellet.server.buffer.AlwaysAllocatingPelletBufferPool
+import dev.pellet.server.buffer.PelletBufferPooling
 import dev.pellet.server.codec.http.HTTPMessageCodec
-import dev.pellet.server.connector.SocketConnector
+import dev.pellet.server.codec.http.IncomingMessageWorkItem
 import dev.pellet.server.metrics.PelletTimer
+import dev.pellet.server.nio.NIOSocketAccepter
+import dev.pellet.server.nio.NIOSocketProcessor
 import dev.pellet.server.routing.http.HTTPRequestHandler
 import dev.pellet.server.routing.http.HTTPRouting
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableJob
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runInterruptible
 import java.net.InetSocketAddress
-import java.nio.channels.AsynchronousChannelGroup
-import java.util.concurrent.SynchronousQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
-import java.util.concurrent.TimeUnit
-import kotlin.math.roundToInt
+import java.nio.channels.Selector
+import java.nio.channels.SocketChannel
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.BlockingQueue
+import java.util.concurrent.atomic.AtomicInteger
 
 class PelletServer(
     private val logRequests: Boolean,
@@ -25,7 +34,6 @@ class PelletServer(
 ) {
 
     private val logger = pelletLogger<PelletServer>()
-    private val writePool = AlwaysAllocatingPelletBufferPool(4096)
     private val readPool = AlwaysAllocatingPelletBufferPool(4096)
 
     fun start(): Job {
@@ -38,33 +46,15 @@ class PelletServer(
         logger.info { "Pellet server starting..." }
         logger.info { "Get help, give feedback, and support development at https://www.pellet.dev" }
 
-        val availableProcessors = Runtime.getRuntime().availableProcessors()
-        val maximumThreadCount = calculateMaximumThreadCount()
-        val executors = ThreadPoolExecutor(
-            availableProcessors,
-            maximumThreadCount,
-            60L,
-            TimeUnit.SECONDS,
-            SynchronousQueue(),
-            CallerRunsPolicy()
-        )
-        /*
-         note: we use a "trampoline" coroutine dispatcher because we expect to launch new coroutines in response to
-         asynchronous socket acceptance, reading, and writing - which are already executed on a bounded thread pool
-         (see above).
-         scheduling these jobs using a different dispatcher adds a costly context switch and doesn't provide any benefit
-         that I can see right now - worth verifying though
-         */
-        val dispatcher = Dispatchers.Unconfined
-        val group = AsynchronousChannelGroup.withThreadPool(executors)
         val supervisorContext = SupervisorJob()
-        val scope = CoroutineScope(dispatcher + supervisorContext)
 
-        val connectorJobs = connectors.map {
-            when (it) {
-                is PelletConnector.HTTP -> createHTTPConnectorJob(it, scope, group)
+        val connectorJobs = connectors
+            .map {
+                when (it) {
+                    is PelletConnector.HTTP -> createHTTPNIOConnectorJob(it, readPool, supervisorContext)
+                }
             }
-        }
+            .flatten()
 
         connectorJobs.forEach { job ->
             job.start()
@@ -81,20 +71,104 @@ class PelletServer(
         return supervisorContext
     }
 
-    private fun createHTTPConnectorJob(
+    private fun createHTTPNIOConnectorJob(
         spec: PelletConnector.HTTP,
-        scope: CoroutineScope,
-        group: AsynchronousChannelGroup
-    ): Job {
+        pool: PelletBufferPooling,
+        supervisorContext: CompletableJob
+    ): List<Job> {
         logger.info { "Starting connector: $spec" }
         validateAndPrintRoutes(spec.router)
+
         val connectorAddress = InetSocketAddress(spec.endpoint.hostname, spec.endpoint.port)
-        val connector = SocketConnector(scope, group, connectorAddress, writePool) { client ->
-            val output = HTTPRequestHandler(client, spec.router, writePool, logRequests)
-            val codec = HTTPMessageCodec(output, readPool)
-            codec
+        val accepter = NIOSocketAccepter(readPool)
+        val handler = HTTPRequestHandler(spec.router, pool, logRequests)
+        val processorCount = Runtime.getRuntime().availableProcessors()
+        val nioProcessorCount = 1
+        val dispatcher = Dispatchers.IO
+        val workerCount = (processorCount - nioProcessorCount) * 3
+        val coroutineScope = CoroutineScope(dispatcher + supervisorContext)
+        val workQueue = ArrayBlockingQueue<IncomingMessageWorkItem>(4096)
+        val readSelectors = (0 until nioProcessorCount)
+            .map {
+                Selector.open()
+            }
+        val processorJobs = (0 until nioProcessorCount)
+            .map { index ->
+                val selector = readSelectors[index]
+                val processor = NIOSocketProcessor(pool, selector)
+                processor.run(coroutineScope)
+            }
+        val workerJobs = (0 until workerCount)
+            .map {
+                coroutineScope.launch(
+                    start = CoroutineStart.LAZY,
+                    context = CoroutineName("worker $it")
+                ) {
+                    while (isActive) {
+                        processWorkItem(workQueue, handler)
+                    }
+                }
+            }
+        val roundRobinIndex = AtomicInteger(0)
+        val selector: (SocketChannel) -> Selector = {
+            val nextIndex = roundRobinIndex.getAndIncrement()
+            if (nextIndex + 1 >= readSelectors.size) {
+                roundRobinIndex.set(0)
+            }
+            readSelectors[nextIndex]
         }
-        return connector.createAcceptJob()
+
+        val accepterJob = coroutineScope.launch(
+            start = CoroutineStart.LAZY,
+            context = CoroutineName("accepter")
+        ) {
+            acceptHTTPClients(accepter, connectorAddress, selector, pool, workQueue, supervisorContext)
+        }
+
+        return listOf(accepterJob) + processorJobs + workerJobs
+    }
+
+    private suspend fun acceptHTTPClients(
+        accepter: NIOSocketAccepter,
+        connectorAddress: InetSocketAddress,
+        selector: (SocketChannel) -> Selector,
+        pool: PelletBufferPooling,
+        workQueue: ArrayBlockingQueue<IncomingMessageWorkItem>,
+        supervisorContext: CompletableJob
+    ) {
+        val result = runCatching {
+            accepter.run(
+                connectorAddress,
+                selector,
+                codecFactory = {
+                    HTTPMessageCodec(pool, workQueue)
+                }
+            )
+        }
+        val exception = result.exceptionOrNull()
+        if (exception != null && exception !is CancellationException) {
+            logger.error(exception) { "unexpected accepter failure" }
+            supervisorContext.cancel()
+        }
+    }
+
+    private suspend fun processWorkItem(
+        workQueue: BlockingQueue<IncomingMessageWorkItem>,
+        handler: HTTPRequestHandler
+    ) {
+        val workItem = runInterruptible {
+            workQueue.take()
+        }
+        val handleResult = runCatching {
+            handler.handle(workItem.message, workItem.client)
+        }
+        val exception = handleResult.exceptionOrNull()
+        if (exception != null) {
+            logger.warn(exception) { "failed to handle work for client ${workItem.client} " }
+            workItem.client.close(
+                CloseReason.ServerException(exception)
+            )
+        }
     }
 
     private fun validateAndPrintRoutes(router: HTTPRouting) {
@@ -102,15 +176,5 @@ class PelletServer(
             throw RuntimeException("routes must be defined before starting a connector")
         }
         logger.info { "Routes: \n${router.routes.joinToString("\n")}" }
-    }
-
-    private fun calculateMaximumThreadCount(): Int {
-        val numberOfCores = Runtime.getRuntime().availableProcessors()
-        val waitTime = 50 // ms
-        val processingTime = 5 // ms
-        val threadCount = numberOfCores * (1 + (waitTime / processingTime.toDouble()))
-        return threadCount
-            .roundToInt()
-            .coerceIn(numberOfCores, 1000)
     }
 }

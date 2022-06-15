@@ -4,5 +4,5 @@ import dev.pellet.server.codec.http.HTTPResponseMessage
 
 interface PelletHTTPResponding {
 
-    suspend fun respond(message: HTTPResponseMessage): Result<Unit>
+    fun respond(message: HTTPResponseMessage): Result<Unit>
 }

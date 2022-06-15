@@ -12,31 +12,30 @@ import dev.pellet.server.codec.http.HTTPHeaders
 import dev.pellet.server.codec.http.HTTPResponseMessage
 import dev.pellet.server.codec.http.HTTPStatusLine
 
-class PelletHTTPResponder(
+internal class PelletHTTPResponder(
     private val client: PelletServerClient,
     private val pool: PelletBufferPooling
 ) : PelletHTTPResponding {
 
     private val logger = pelletLogger<PelletHTTPResponder>()
 
-    override suspend fun respond(message: HTTPResponseMessage): Result<Unit> {
+    override fun respond(message: HTTPResponseMessage): Result<Unit> {
         val effectiveResponse = buildEffectiveResponse(message)
-        return client
-            .respond(effectiveResponse, pool)
-            .map { }
+        val buffer = buildResponseBuffer(effectiveResponse, pool)
+        return client.writeAndRelease(buffer).map { Unit }
     }
 }
 
-private suspend fun PelletServerClient.respond(
+private fun buildResponseBuffer(
     message: HTTPResponseMessage,
     pool: PelletBufferPooling
-): Result<Int> {
+): PelletBuffer {
     val buffer = pool.provide()
         .appendStatusLine(message.statusLine)
         .appendHeaders(message.headers)
         .appendEntity(message.entity) // todo: good place for streaming/chunked entity logic
         .flip()
-    return this.writeAndRelease(buffer)
+    return buffer
 }
 
 private fun PelletBuffer.appendStatusLine(
