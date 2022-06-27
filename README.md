@@ -4,7 +4,7 @@
 [![GitHub License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg?style=flat-square)](http://www.apache.org/licenses/LICENSE-2.0)
 [![Sponsor](https://img.shields.io/badge/Patreon-F96854?style=flat-square&logo=patreon&logoColor=white)](https://www.patreon.com/carrotcodes)
 
-An opinionated Kotlin-first web framework that helps you write fast, concise, and correct backend services 🚀.
+Pellet is an opinionated Kotlin-first web framework that helps you write fast, concise, and correct backend services 🚀.
 
 Pellet handles a huge number of requests per second, has a tiny dependency graph (`kotlin-stdlib`, `kotlinx-coroutines`, and `slf4j-api`), and offers approximately one way of doing things. The framework's conciseness is achieved through functional composition, instead of traditional JVM approaches involving annotations and reflection.
 
@@ -16,7 +16,7 @@ You can support my work by sponsoring [on Patreon](https://www.patreon.com/carro
 
 This project is still in the prototyping phase - give the latest version a try! Let me know what you think, and what to focus on next, [on Discord](https://www.carrot.blog/discord) 💬.
 
-Note that the prototype is built with the latest JVM LTS release at the time of writing - Java 17.
+Note that the prototype is built with the latest JVM release at the time of writing - Java 18.
 
 Gradle (Kotlin):
 ```
@@ -25,7 +25,7 @@ repositories {
 }
 
 dependencies {
-    implementation(platform("dev.pellet:pellet-bom:0.0.7"))
+    implementation(platform("dev.pellet:pellet-bom:0.0.8"))
     implementation("dev.pellet:pellet-server")
     implementation("dev.pellet:pellet-logging")
 }
