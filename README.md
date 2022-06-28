@@ -14,7 +14,7 @@ You can support my work by sponsoring [on Patreon](https://www.patreon.com/carro
 
 ## Releases
 
-This project is still in the prototyping phase - give the latest version a try! Let me know what you think, and what to focus on next, [on Discord](https://www.carrot.blog/discord) 💬.
+This project is still in the prototyping phase - give the latest version a try! Let me know what you think, and what to focus on next, in [GitHub Discussions](https://github.com/CarrotCodes/Pellet/discussions/categories/feedback) 💬.
 
 Note that the prototype is built with the latest JVM release at the time of writing - Java 18.
 
