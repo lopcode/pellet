@@ -16,7 +16,7 @@ You can support my work by sponsoring [on Patreon](https://www.patreon.com/carro
 
 This project is still in the prototyping phase - give the latest version a try! Let me know what you think, and what to focus on next, in [GitHub Discussions](https://github.com/CarrotCodes/Pellet/discussions/categories/feedback) 💬.
 
-Note that the prototype is built with the latest JVM release at the time of writing - Java 18.
+Note that the prototype is built with the latest JVM LTS release at the time of writing - Java 17.
 
 Gradle (Kotlin):
 ```
@@ -25,7 +25,7 @@ repositories {
 }
 
 dependencies {
-    implementation(platform("dev.pellet:pellet-bom:0.0.8"))
+    implementation(platform("dev.pellet:pellet-bom:0.0.9"))
     implementation("dev.pellet:pellet-server")
     implementation("dev.pellet:pellet-logging")
 }

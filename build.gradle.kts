@@ -24,13 +24,14 @@ subprojects {
         withSourcesJar()
 
         toolchain {
-            sourceCompatibility = JavaVersion.VERSION_17
-            targetCompatibility = JavaVersion.VERSION_17
+            languageVersion.set(JavaLanguageVersion.of(17))
         }
     }
 
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions.jvmTarget = "17"
+    kotlin {
+        jvmToolchain {
+            this.languageVersion.set(JavaLanguageVersion.of("17"))
+        }
     }
 
     sourceSets.create("integrationTest") {
