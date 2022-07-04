@@ -350,12 +350,18 @@ internal class HTTPMessageCodec(
        extension-method = token
         */
 
-        val split = line.split(HTTPCharacters.SPACE, limit = 3)
-        if (split.size != 3) {
+        val methodSpaceIndex = line.indexOf(HTTPCharacters.SPACE)
+        if (methodSpaceIndex <= 0 || methodSpaceIndex + 1 > line.length) {
             return Result.failure(RuntimeException("expected request line to have 3 parts"))
         }
+        val resourceURISpaceIndex = line.indexOf(HTTPCharacters.SPACE, methodSpaceIndex + 1)
+        if (resourceURISpaceIndex <= 0 || resourceURISpaceIndex + 1 > line.length) {
+            return Result.failure(RuntimeException("expected request line to have 3 parts"))
+        }
+        val method = line.substring(0, methodSpaceIndex)
+        val rawResourceURI = line.substring(methodSpaceIndex + 1, resourceURISpaceIndex)
+        val httpVersion = line.substring(resourceURISpaceIndex + 1)
 
-        val (method, rawResourceURI, httpVersion) = split
         // todo: verify method is a "token" entity
         if (method.isEmpty()) {
             return Result.failure(RuntimeException("malformed method"))
