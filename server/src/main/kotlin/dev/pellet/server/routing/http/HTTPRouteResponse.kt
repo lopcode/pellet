@@ -9,10 +9,10 @@ import dev.pellet.server.codec.http.HTTPHeader
 import dev.pellet.server.codec.http.HTTPHeaderConstants
 import dev.pellet.server.codec.http.HTTPHeaders
 import kotlinx.serialization.InternalSerializationApi
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 import java.nio.ByteBuffer
+import java.nio.charset.Charset
 
 data class HTTPRouteResponse(
     val statusCode: Int,
@@ -69,11 +69,10 @@ data class HTTPRouteResponse(
 
         fun entity(
             byteBuffer: ByteBuffer,
-            contentType: ContentType
+            rawContentType: String
         ): Builder {
             this.entity = HTTPEntity.Content(PelletBuffer(byteBuffer))
-            val contentTypeHeaderValue = ContentTypeSerialiser.serialise(contentType)
-            this.headers[HTTPHeaderConstants.contentType] = contentTypeHeaderValue
+            this.headers[HTTPHeaderConstants.contentType] = rawContentType
             return this
         }
 
@@ -83,7 +82,17 @@ data class HTTPRouteResponse(
         ): Builder {
             val charset = contentType.charset() ?: Charsets.UTF_8
             val byteBuffer = charset.encode(entity)
-            return this.entity(byteBuffer, contentType)
+            val contentTypeHeaderValue = ContentTypeSerialiser.serialise(contentType)
+            return this.entity(byteBuffer, contentTypeHeaderValue)
+        }
+
+        fun entity(
+            entity: String,
+            rawContentType: String,
+            charset: Charset = Charsets.UTF_8
+        ): Builder {
+            val byteBuffer = charset.encode(entity)
+            return this.entity(byteBuffer, rawContentType)
         }
 
         @OptIn(InternalSerializationApi::class)
