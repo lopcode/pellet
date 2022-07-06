@@ -21,21 +21,33 @@ internal class PelletHTTPResponder(
 
     override fun respond(message: HTTPResponseMessage): Result<Unit> {
         val effectiveResponse = buildEffectiveResponse(message)
-        val buffer = buildResponseBuffer(effectiveResponse, pool)
-        return client.writeAndRelease(buffer).map { Unit }
+        return writeResponse(
+            effectiveResponse,
+            client,
+            pool
+        ).map { }
     }
 }
 
-private fun buildResponseBuffer(
+private fun writeResponse(
     message: HTTPResponseMessage,
+    client: PelletServerClient,
     pool: PelletBufferPooling
-): PelletBuffer {
+): Result<Unit> {
     val buffer = pool.provide()
         .appendStatusLine(message.statusLine)
         .appendHeaders(message.headers)
-        .appendEntity(message.entity) // todo: good place for streaming/chunked entity logic
         .flip()
-    return buffer
+    val result = client.writeAndRelease(buffer)
+    if (result.isFailure) {
+        return result.map { }
+    }
+    if (message.entity !is HTTPEntity.Content) {
+        return result.map { }
+    }
+    return client
+        .writeAndRelease(message.entity.buffer)
+        .map {}
 }
 
 private fun PelletBuffer.appendStatusLine(
@@ -65,19 +77,6 @@ private fun PelletBuffer.appendHeaders(
             .putCRLF()
     }
     return this.putCRLF()
-}
-
-private fun PelletBuffer.appendEntity(
-    entity: HTTPEntity
-): PelletBuffer {
-    when (entity) {
-        is HTTPEntity.NoContent -> {}
-        is HTTPEntity.Content -> {
-            this.put(entity.buffer)
-        }
-    }
-
-    return this
 }
 
 private fun PelletBuffer.putCRLF(): PelletBuffer {
