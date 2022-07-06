@@ -34,7 +34,7 @@ class PelletServer(
 ) {
 
     private val logger = pelletLogger<PelletServer>()
-    private val readPool = AlwaysAllocatingPelletBufferPool(4096)
+    private val pool = AlwaysAllocatingPelletBufferPool(4096)
 
     fun start(): Job {
         if (connectors.isEmpty()) {
@@ -51,7 +51,7 @@ class PelletServer(
         val connectorJobs = connectors
             .map {
                 when (it) {
-                    is PelletConnector.HTTP -> createHTTPNIOConnectorJob(it, readPool, supervisorContext)
+                    is PelletConnector.HTTP -> createHTTPNIOConnectorJob(it, pool, supervisorContext)
                 }
             }
             .flatten()
@@ -80,7 +80,7 @@ class PelletServer(
         validateAndPrintRoutes(spec.router)
 
         val connectorAddress = InetSocketAddress(spec.endpoint.hostname, spec.endpoint.port)
-        val accepter = NIOSocketAccepter(readPool)
+        val accepter = NIOSocketAccepter(this.pool)
         val handler = HTTPRequestHandler(spec.router, pool, logRequests)
         val processorCount = Runtime.getRuntime().availableProcessors()
         val nioProcessorCount = 1
