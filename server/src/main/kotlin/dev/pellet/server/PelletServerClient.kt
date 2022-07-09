@@ -44,6 +44,23 @@ class PelletServerClient(
         return Result.success(byteCount)
     }
 
+    fun writeAndRelease(vararg buffers: PelletBuffer): Result<Long> {
+        val byteBuffers = buffers.map { it.byteBuffer }.toTypedArray()
+        val byteCount = byteBuffers.sumOf { it.remaining().toLong() }
+        while (byteBuffers.any { it.hasRemaining() }) {
+            val attempt = runCatching {
+                trackedSocket.channel.write(byteBuffers)
+            }
+            if (attempt.isFailure) {
+                return attempt
+            }
+        }
+        buffers.forEach {
+            pool.release(it)
+        }
+        return Result.success(byteCount)
+    }
+
     fun close(source: CloseReason): Result<Unit> {
         logger.debug { "closed ${trackedSocket.channel} (initiator: $source)" }
         return runCatching {

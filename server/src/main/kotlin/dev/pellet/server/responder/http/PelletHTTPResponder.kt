@@ -34,19 +34,17 @@ private fun writeResponse(
     client: PelletServerClient,
     pool: PelletBufferPooling
 ): Result<Unit> {
-    val buffer = pool.provide()
+    val nonEntityBuffer = pool.provide()
         .appendStatusLine(message.statusLine)
         .appendHeaders(message.headers)
         .flip()
-    val result = client.writeAndRelease(buffer)
-    if (result.isFailure) {
-        return result.map { }
-    }
     if (message.entity !is HTTPEntity.Content) {
-        return result.map { }
+        return client
+            .writeAndRelease(nonEntityBuffer)
+            .map {}
     }
     return client
-        .writeAndRelease(message.entity.buffer)
+        .writeAndRelease(nonEntityBuffer, message.entity.buffer)
         .map {}
 }
 
