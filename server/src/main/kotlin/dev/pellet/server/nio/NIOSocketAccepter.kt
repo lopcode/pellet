@@ -49,12 +49,12 @@ internal class NIOSocketAccepter(
                 socketChannel.socket().tcpNoDelay = true
                 socketChannel.socket().reuseAddress = true
                 socketChannel.configureBlocking(false)
-                val readSelector = acceptChannelSelector(socketChannel)
+                val socketSelector = acceptChannelSelector(socketChannel)
+                val selectorKey = socketChannel.register(socketSelector, SelectionKey.OP_READ)
                 val nioSocket = NIOSocket(socketChannel, codecFactory())
                 val client = PelletServerClient(nioSocket, pool)
-                val selectorKey = socketChannel.register(readSelector, SelectionKey.OP_READ)
                 selectorKey.attach(client)
-                readSelector.wakeup()
+                socketSelector.wakeup()
             }
         }
     }

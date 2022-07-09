@@ -16,7 +16,7 @@ sealed class CloseReason {
 
 class PelletServerClient(
     internal val trackedSocket: NIOSocket,
-    private val pool: PelletBufferPooling
+    internal val pool: PelletBufferPooling
 ) {
 
     private val logger = pelletLogger<PelletServerClient>()
@@ -30,6 +30,23 @@ class PelletServerClient(
             }
         }
 
+    fun writeAndRelease(vararg buffer: PelletBuffer): Result<Long> {
+        val byteCount = buffer.sumOf { it.remaining().toLong() }
+        val buffers = buffer.map { it.byteBuffer }.toTypedArray()
+        while (buffers.any { it.hasRemaining() }) {
+            val attempt = runCatching {
+                trackedSocket.channel.write(buffers)
+            }
+            if (attempt.isFailure) {
+                return attempt
+            }
+        }
+        buffer.forEach {
+            pool.release(it)
+        }
+        return Result.success(byteCount)
+    }
+
     fun writeAndRelease(buffer: PelletBuffer): Result<Int> {
         val byteCount = buffer.byteBuffer.remaining()
         while (buffer.byteBuffer.hasRemaining()) {
@@ -41,23 +58,6 @@ class PelletServerClient(
             }
         }
         pool.release(buffer)
-        return Result.success(byteCount)
-    }
-
-    fun writeAndRelease(vararg buffers: PelletBuffer): Result<Long> {
-        val byteBuffers = buffers.map { it.byteBuffer }.toTypedArray()
-        val byteCount = byteBuffers.sumOf { it.remaining().toLong() }
-        while (byteBuffers.any { it.hasRemaining() }) {
-            val attempt = runCatching {
-                trackedSocket.channel.write(byteBuffers)
-            }
-            if (attempt.isFailure) {
-                return attempt
-            }
-        }
-        buffers.forEach {
-            pool.release(it)
-        }
         return Result.success(byteCount)
     }
 

@@ -12,12 +12,11 @@ import dev.pellet.server.extension.trimLWS
 import dev.pellet.server.extension.trimTrailing
 import java.net.URI
 import java.util.Locale
-import java.util.concurrent.ArrayBlockingQueue
 import kotlin.math.min
 
 internal class HTTPMessageCodec(
     private val pool: PelletBufferPooling,
-    private val workQueue: ArrayBlockingQueue<IncomingMessageWorkItem>
+    private val processor: (HTTPRequestMessage, PelletServerClient) -> Unit
 ) : Codec {
 
     private val requestLineBuffer = pool.provide()
@@ -95,7 +94,7 @@ internal class HTTPMessageCodec(
 
                     handleHeaderLine()
                     if (state == ConsumeState.REQUEST_LINE) {
-                        workQueue.put(IncomingMessageWorkItem(buildMessage(), client))
+                        processor(buildMessage(), client)
                     }
                 }
                 ConsumeState.FIXED_ENTITY -> {
@@ -104,7 +103,7 @@ internal class HTTPMessageCodec(
                     }
 
                     handleFixedEntity()
-                    workQueue.put(IncomingMessageWorkItem(buildMessage(), client))
+                    processor(buildMessage(), client)
                 }
                 ConsumeState.CHUNKED_ENTITY -> {
                     when (chunkState) {
@@ -132,7 +131,7 @@ internal class HTTPMessageCodec(
 
                             logger.debug { "read chunk end line" }
                             handleChunkedEntity()
-                            workQueue.put(IncomingMessageWorkItem(buildMessage(), client))
+                            processor(buildMessage(), client)
                         }
                     }
                 }
