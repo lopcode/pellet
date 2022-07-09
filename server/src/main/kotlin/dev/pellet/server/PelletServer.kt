@@ -82,11 +82,12 @@ class PelletServer(
         val connectorAddress = InetSocketAddress(spec.endpoint.hostname, spec.endpoint.port)
         val accepter = NIOSocketAccepter(this.pool)
         val handler = HTTPRequestHandler(spec.router, pool, logRequests)
+        val nioProcessorCount = 2
+        val coroutineScope = CoroutineScope(Dispatchers.Default + supervisorContext)
         val processorCount = Runtime.getRuntime().availableProcessors()
-        val nioProcessorCount = 1
-        val dispatcher = Dispatchers.IO
-        val workerCount = (processorCount - nioProcessorCount) * 3
-        val coroutineScope = CoroutineScope(dispatcher + supervisorContext)
+        val workerDispatcher = Dispatchers.IO.limitedParallelism(processorCount)
+        val workerCount = processorCount * 4
+        val workerScope = CoroutineScope(workerDispatcher + supervisorContext)
         val workQueue = ArrayBlockingQueue<IncomingMessageWorkItem>(4096)
         val readSelectors = (0 until nioProcessorCount)
             .map {
@@ -100,7 +101,7 @@ class PelletServer(
             }
         val workerJobs = (0 until workerCount)
             .map {
-                coroutineScope.launch(
+                workerScope.launch(
                     start = CoroutineStart.LAZY,
                     context = CoroutineName("worker $it")
                 ) {
@@ -122,7 +123,7 @@ class PelletServer(
             start = CoroutineStart.LAZY,
             context = CoroutineName("accepter")
         ) {
-            acceptHTTPClients(accepter, connectorAddress, selector, pool, workQueue, supervisorContext)
+            acceptHTTPClients(accepter, connectorAddress, selector, pool, supervisorContext, workQueue)
         }
 
         return listOf(accepterJob) + processorJobs + workerJobs
@@ -133,15 +134,17 @@ class PelletServer(
         connectorAddress: InetSocketAddress,
         selector: (SocketChannel) -> Selector,
         pool: PelletBufferPooling,
-        workQueue: ArrayBlockingQueue<IncomingMessageWorkItem>,
-        supervisorContext: CompletableJob
+        supervisorContext: CompletableJob,
+        workQueue: BlockingQueue<IncomingMessageWorkItem>
     ) {
         val result = runCatching {
             accepter.run(
                 connectorAddress,
                 selector,
                 codecFactory = {
-                    HTTPMessageCodec(pool, workQueue)
+                    HTTPMessageCodec(pool) { message, client ->
+                        workQueue.put(IncomingMessageWorkItem(message, client))
+                    }
                 }
             )
         }

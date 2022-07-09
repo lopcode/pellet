@@ -2,10 +2,11 @@ package dev.pellet.server
 
 import dev.pellet.logging.pelletLogger
 import dev.pellet.server.buffer.PelletBuffer
-import dev.pellet.server.buffer.PelletBufferPooling
 import dev.pellet.server.nio.NIOSocket
 import java.net.InetSocketAddress
 import java.net.UnixDomainSocketAddress
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.BlockingQueue
 
 sealed class CloseReason {
 
@@ -16,7 +17,7 @@ sealed class CloseReason {
 
 class PelletServerClient(
     internal val trackedSocket: NIOSocket,
-    private val pool: PelletBufferPooling
+    internal val outbound: BlockingQueue<PelletBuffer> = ArrayBlockingQueue(16)
 ) {
 
     private val logger = pelletLogger<PelletServerClient>()
@@ -30,18 +31,20 @@ class PelletServerClient(
             }
         }
 
-    fun writeAndRelease(buffer: PelletBuffer): Result<Int> {
-        val byteCount = buffer.byteBuffer.remaining()
-        while (buffer.byteBuffer.hasRemaining()) {
-            val attempt = runCatching {
-                trackedSocket.channel.write(buffer.byteBuffer)
-            }
-            if (attempt.isFailure) {
-                return attempt
-            }
-        }
-        pool.release(buffer)
-        return Result.success(byteCount)
+    fun writeAndRelease(buffer: PelletBuffer) {
+        outbound.put(buffer)
+        trackedSocket.markReadWrite()
+//        val byteCount = buffer.byteBuffer.remaining()
+//        while (buffer.byteBuffer.hasRemaining()) {
+//            val attempt = runCatching {
+//                trackedSocket.channel.write(buffer.byteBuffer)
+//            }
+//            if (attempt.isFailure) {
+//                return attempt
+//            }
+//        }
+//        pool.release(buffer)
+//        return Result.success(byteCount)
     }
 
     fun close(source: CloseReason): Result<Unit> {

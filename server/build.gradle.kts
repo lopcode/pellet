@@ -23,6 +23,8 @@ repositories {
 dependencies {
     implementation(project(":logging"))
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
+    implementation("org.jboss.xnio:xnio-api:3.8.7.Final")
+    implementation("org.jboss.xnio:xnio-nio:3.8.7.Final")
 }
 
 tasks.jacocoTestReport {

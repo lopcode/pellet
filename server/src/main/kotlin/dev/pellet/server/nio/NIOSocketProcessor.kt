@@ -8,7 +8,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runInterruptible
 import java.net.SocketException
 import java.nio.ByteBuffer
 import java.nio.channels.SelectionKey
@@ -26,14 +25,12 @@ internal class NIOSocketProcessor(
         context = CoroutineName("nio processor")
     ) {
         while (isActive) {
-            readAll()
+            processSockets()
         }
     }
 
-    private suspend fun readAll(): Int {
-        val numberKeysReady = runInterruptible {
-            this.readSelector.select()
-        }
+    private fun processSockets(): Int {
+        val numberKeysReady = this.readSelector.select()
         if (numberKeysReady <= 0) {
             return 0
         }
@@ -46,8 +43,13 @@ internal class NIOSocketProcessor(
             if (!key.isValid) {
                 continue
             }
-            buffer.clear()
-            readSocket(key, buffer)
+            if (key.isValid && key.isReadable) {
+                buffer.clear()
+                readSocket(key, buffer)
+            }
+            if (key.isValid && key.isWritable) {
+                writeSocket(key)
+            }
         }
 
         return numberKeysReady
@@ -76,6 +78,41 @@ internal class NIOSocketProcessor(
         val bytesCopy = clone(buffer.byteBuffer)
         val newBuffer = PelletBuffer(bytesCopy).flip()
         client.trackedSocket.codec.consume(newBuffer, client)
+    }
+
+    private fun writeSocket(
+        key: SelectionKey
+    ) {
+        val client = key.attachment() as? PelletServerClient
+        if (client == null) {
+            // too fast to read - skip this client for now
+            return
+        }
+        val buffers = mutableListOf<PelletBuffer>()
+        client.outbound.drainTo(buffers)
+        if (buffers.isEmpty()) {
+            client.trackedSocket.markReadOnly()
+            return
+        }
+        write(client, *buffers.toTypedArray())
+        client.trackedSocket.markReadOnly()
+    }
+
+    private fun write(
+        client: PelletServerClient,
+        vararg buffers: PelletBuffer
+    ): Result<Long> {
+        val byteBuffers = buffers.map { it.byteBuffer }.toTypedArray()
+        val byteCount = byteBuffers.sumOf { it.remaining().toLong() }
+        while (byteBuffers.any { it.hasRemaining() }) {
+            val attempt = runCatching {
+                client.trackedSocket.channel.write(byteBuffers)
+            }
+            if (attempt.isFailure) {
+                return attempt
+            }
+        }
+        return Result.success(byteCount)
     }
 
     private fun clone(original: ByteBuffer): ByteBuffer {

@@ -38,16 +38,12 @@ private fun writeResponse(
         .appendStatusLine(message.statusLine)
         .appendHeaders(message.headers)
         .flip()
-    val result = client.writeAndRelease(buffer)
-    if (result.isFailure) {
-        return result.map { }
-    }
+    client.writeAndRelease(buffer)
     if (message.entity !is HTTPEntity.Content) {
-        return result.map { }
+        return Result.success(Unit)
     }
-    return client
-        .writeAndRelease(message.entity.buffer)
-        .map {}
+    client.writeAndRelease(message.entity.buffer)
+    return Result.success(Unit)
 }
 
 private fun PelletBuffer.appendStatusLine(
