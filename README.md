@@ -25,7 +25,7 @@ repositories {
 }
 
 dependencies {
-    implementation(platform("dev.pellet:pellet-bom:0.0.12"))
+    implementation(platform("dev.pellet:pellet-bom:0.0.13"))
     implementation("dev.pellet:pellet-server")
     implementation("dev.pellet:pellet-logging")
 }
