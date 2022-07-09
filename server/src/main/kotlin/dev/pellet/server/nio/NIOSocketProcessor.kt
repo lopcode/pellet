@@ -16,7 +16,7 @@ import java.nio.channels.Selector
 
 internal class NIOSocketProcessor(
     pool: PelletBufferPooling,
-    private val readSelector: Selector
+    private val selector: Selector
 ) {
 
     private val buffer = pool.provide()
@@ -26,19 +26,19 @@ internal class NIOSocketProcessor(
         context = CoroutineName("nio processor")
     ) {
         while (isActive) {
-            readAll()
+            processSockets()
         }
     }
 
-    private suspend fun readAll(): Int {
+    private suspend fun processSockets(): Int {
         val numberKeysReady = runInterruptible {
-            this.readSelector.select()
+            this.selector.select()
         }
         if (numberKeysReady <= 0) {
             return 0
         }
 
-        val selectedKeys = this.readSelector.selectedKeys()
+        val selectedKeys = this.selector.selectedKeys()
         val iterator = selectedKeys.iterator()
         while (iterator.hasNext()) {
             val key = iterator.next()
@@ -46,8 +46,10 @@ internal class NIOSocketProcessor(
             if (!key.isValid) {
                 continue
             }
-            buffer.clear()
-            readSocket(key, buffer)
+            if (key.isValid && key.isReadable) {
+                buffer.clear()
+                readSocket(key, buffer)
+            }
         }
 
         return numberKeysReady
