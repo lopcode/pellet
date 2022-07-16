@@ -80,7 +80,7 @@ data class HTTPRouteResponse(
             entity: String,
             contentType: ContentType
         ): Builder {
-            val charset = contentType.charset() ?: Charsets.UTF_8
+            val charset = contentType.charsetOrNull() ?: Charsets.UTF_8
             val byteBuffer = charset.encode(entity)
             val contentTypeHeaderValue = ContentTypeSerialiser.serialise(contentType)
             return this.entity(byteBuffer, contentTypeHeaderValue)

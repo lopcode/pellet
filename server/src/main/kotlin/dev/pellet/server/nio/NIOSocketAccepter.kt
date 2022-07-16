@@ -1,6 +1,5 @@
 package dev.pellet.server.nio
 
-import dev.pellet.server.PelletServerClient
 import dev.pellet.server.buffer.PelletBufferPooling
 import dev.pellet.server.codec.Codec
 import kotlinx.coroutines.runInterruptible
@@ -51,8 +50,8 @@ internal class NIOSocketAccepter(
                 socketChannel.configureBlocking(false)
                 val socketSelector = acceptChannelSelector(socketChannel)
                 val selectorKey = socketChannel.register(socketSelector, SelectionKey.OP_READ)
-                val nioSocket = NIOSocket(socketChannel, codecFactory())
-                val client = PelletServerClient(nioSocket, pool)
+                val nioSocket = NIOSocket(socketChannel)
+                val client = NIOPelletServerClient(nioSocket, pool, codecFactory())
                 selectorKey.attach(client)
                 socketSelector.wakeup()
             }

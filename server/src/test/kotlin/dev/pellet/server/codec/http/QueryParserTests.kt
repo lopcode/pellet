@@ -44,6 +44,18 @@ class QueryParserTests {
     }
 
     @Test
+    fun `multiple named parameters with the same name form an ordered list`() {
+        val query = "a=b&a=c"
+        val parsed = QueryParser.parseEncodedQuery(query)
+        val expected = QueryParameters(
+            mapOf(
+                "a" to listOf("b", "c")
+            )
+        )
+        assertSuccess(expected, parsed)
+    }
+
+    @Test
     fun `mixed null and empty parameters`() {
         val query = "a=&c=d&e"
         val parsed = QueryParser.parseEncodedQuery(query)
@@ -90,6 +102,9 @@ class QueryParserTests {
             "a=%x",
             "&",
             "&&",
+            "a=%x&c=d",
+            "%x=b",
+            "%x",
             "=",
             "==",
             "&=&=",

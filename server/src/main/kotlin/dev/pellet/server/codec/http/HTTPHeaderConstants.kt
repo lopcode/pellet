@@ -2,11 +2,11 @@ package dev.pellet.server.codec.http
 
 object HTTPHeaderConstants {
 
-    val contentLength = "Content-Length"
-    val contentType = "Content-Type"
-    val transferEncoding = "Transfer-Encoding"
-    val chunked = "chunked"
-    val connection = "Connection"
-    val keepAlive = "keep-alive"
-    val close = "close"
+    const val contentLength = "Content-Length"
+    const val contentType = "Content-Type"
+    const val transferEncoding = "Transfer-Encoding"
+    const val chunked = "chunked"
+    const val connection = "Connection"
+    const val keepAlive = "keep-alive"
+    const val close = "close"
 }

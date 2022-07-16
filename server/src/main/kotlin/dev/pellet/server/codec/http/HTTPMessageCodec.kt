@@ -176,22 +176,27 @@ internal class HTTPMessageCodec(
     }
 
     private fun consumeDataChunk(source: PelletBuffer, target: PelletBuffer): Boolean {
+        if (readChunkSizeOctets < expectedChunkSizeOctets) {
+            val remainingOctets = expectedChunkSizeOctets - readChunkSizeOctets
+            val availableOctets = min(source.remaining(), remainingOctets)
+            target.put(target.position(), source, source.position(), availableOctets)
+            readChunkSizeOctets += availableOctets
+            target.position(target.position() + availableOctets)
+            source.advance(availableOctets)
+        }
+
         val expectedSizeWithTrailingCRLF = expectedChunkSizeOctets + 2
-        if (readChunkSizeOctets < expectedSizeWithTrailingCRLF) {
+        if (source.hasRemaining() && readChunkSizeOctets < expectedSizeWithTrailingCRLF) {
             val remainingOctets = expectedSizeWithTrailingCRLF - readChunkSizeOctets
             val availableOctets = min(source.remaining(), remainingOctets)
-            target.put(readChunkSizeOctets, source, source.position(), availableOctets)
-            readChunkSizeOctets += availableOctets
-            target.position(readChunkSizeOctets)
             source.advance(availableOctets)
+            readChunkSizeOctets += availableOctets
         }
 
         if (readChunkSizeOctets < expectedSizeWithTrailingCRLF) {
             return false
         }
 
-        target.trimTrailing(HTTPCharacters.LINE_FEED_BYTE)
-        target.trimTrailing(HTTPCharacters.CARRIAGE_RETURN_BYTE)
         return true
     }
 

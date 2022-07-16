@@ -1,5 +1,6 @@
 package dev.pellet.server.codec.http.query
 
+import dev.pellet.server.codec.http.HTTPCharacters
 import java.net.URLDecoder
 
 object QueryParser {
@@ -15,7 +16,10 @@ object QueryParser {
         val queryMap = mutableMapOf<String, MutableList<String?>>()
         var currentIndex = 0
         while (currentIndex < string.length) {
-            val nextAndIndex = string.indexOf('&', startIndex = currentIndex)
+            val nextAndIndex = string.indexOf(
+                HTTPCharacters.AMPERSAND,
+                startIndex = currentIndex
+            )
             if (nextAndIndex == 0) {
                 return Result.failure(
                     IllegalArgumentException("unexpected & in url")
@@ -56,7 +60,7 @@ object QueryParser {
     }
 
     private fun parseAndDecodeSegment(encodedSegment: String): Result<Pair<String, String?>> {
-        val firstEqualsIndex = encodedSegment.indexOf('=')
+        val firstEqualsIndex = encodedSegment.indexOf(HTTPCharacters.EQUALS)
         if (firstEqualsIndex == 0) {
             return Result.failure(
                 IllegalArgumentException("unexpected = in url")

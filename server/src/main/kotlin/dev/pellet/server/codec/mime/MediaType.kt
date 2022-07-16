@@ -8,15 +8,21 @@ data class MediaType(
     val parameters: List<Pair<String, String>> = listOf()
 ) {
 
+    constructor(
+        type: String,
+        subtype: String,
+        vararg parameters: Pair<String, String>
+    ) : this(type, subtype, parameters.toList())
+
     /**
      * Attempts to find the first charset as specified by [parameters]
      */
-    fun charset(): Charset? {
+    fun charsetOrNull(): Charset? {
         val charsetValue = parameters
             .firstOrNull {
                 it.first.equals("charset", ignoreCase = true)
             }
-            ?.first
+            ?.second
             ?: return null
         return runCatching {
             Charset.forName(charsetValue)
