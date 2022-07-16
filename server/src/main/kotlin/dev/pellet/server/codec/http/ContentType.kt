@@ -20,7 +20,7 @@ object ContentTypes {
 }
 
 fun ContentType.matches(other: ContentType): Boolean {
-    if (this.type == "*") {
+    if (this.type == HTTPCharacters.ASTERISK.toString()) {
         return true
     }
 
@@ -28,7 +28,7 @@ fun ContentType.matches(other: ContentType): Boolean {
         return false
     }
 
-    if (this.subtype == "*") {
+    if (this.subtype == HTTPCharacters.ASTERISK.toString()) {
         return true
     }
 
@@ -36,6 +36,5 @@ fun ContentType.matches(other: ContentType): Boolean {
         return false
     }
 
-    // todo: parameter wildcards?
     return other.parameters.containsAll(this.parameters)
 }

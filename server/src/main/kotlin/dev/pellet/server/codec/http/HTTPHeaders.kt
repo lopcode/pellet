@@ -46,6 +46,11 @@ data class HTTPHeaders(
         return this
     }
 
+    fun add(rawName: String, rawValue: String): HTTPHeaders {
+        val header = HTTPHeader(rawName, rawValue)
+        return add(header)
+    }
+
     fun remove(headerName: String): HTTPHeaders {
         val normalisedName = normaliseName(headerName)
         storage -= normalisedName

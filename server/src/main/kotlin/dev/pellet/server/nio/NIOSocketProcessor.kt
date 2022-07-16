@@ -1,6 +1,5 @@
 package dev.pellet.server.nio
 
-import dev.pellet.server.PelletServerClient
 import dev.pellet.server.buffer.PelletBuffer
 import dev.pellet.server.buffer.PelletBufferPooling
 import kotlinx.coroutines.CoroutineName
@@ -9,7 +8,6 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
-import java.net.SocketException
 import java.nio.ByteBuffer
 import java.nio.channels.SelectionKey
 import java.nio.channels.Selector
@@ -59,14 +57,12 @@ internal class NIOSocketProcessor(
         key: SelectionKey,
         buffer: PelletBuffer
     ) {
-        val client = key.attachment() as? PelletServerClient
+        val client = key.attachment() as? NIOPelletServerClient
         if (client == null) {
             // too fast to read - skip this client for now
             return
         }
-        val bytesRead = try {
-            client.trackedSocket.channel.read(buffer.byteBuffer)
-        } catch (exception: SocketException) {
+        val bytesRead = client.read(buffer).getOrElse {
             close(key)
             return
         }
@@ -77,7 +73,7 @@ internal class NIOSocketProcessor(
         }
         val bytesCopy = clone(buffer.byteBuffer)
         val newBuffer = PelletBuffer(bytesCopy).flip()
-        client.trackedSocket.codec.consume(newBuffer, client)
+        client.codec.consume(newBuffer, client)
     }
 
     private fun clone(original: ByteBuffer): ByteBuffer {
@@ -91,7 +87,7 @@ internal class NIOSocketProcessor(
     private fun close(
         key: SelectionKey
     ) {
-        val trackedClient = (key.attachment() as PelletServerClient)
+        val trackedClient = (key.attachment() as NIOPelletServerClient)
         key.attach(null)
         key.cancel()
         trackedClient.trackedSocket.channel.close()
