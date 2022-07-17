@@ -6,7 +6,6 @@ import dev.pellet.server.PelletBuilder.pelletServer
 import dev.pellet.server.PelletConnector
 import dev.pellet.server.responder.http.PelletHTTPRouteContext
 import dev.pellet.server.routing.http.HTTPRouteResponse
-import dev.pellet.server.routing.http.PelletHTTPRoutePath
 import dev.pellet.server.routing.stringDescriptor
 import dev.pellet.server.routing.uuidDescriptor
 import kotlinx.coroutines.runBlocking
@@ -19,17 +18,16 @@ private val idDescriptor = uuidDescriptor("id")
 private val suffixDescriptor = stringDescriptor("suffix")
 
 fun main() = runBlocking {
-    val helloIdPath = PelletHTTPRoutePath.Builder()
-        .addComponents("/v1")
-        .addVariable(idDescriptor)
-        .addComponents("/hello")
-        .build()
     val sharedRouter = httpRouter {
         get("/", ::handleRequest)
-        get("/v1/hello", ::handleResponseBody)
-        get(helloIdPath, ::handleNamedResponseBody)
-        post("/v1/echo", ::handleEchoRequest)
-        get("/v1/error", ::handleForceError)
+        path("/v1") {
+            get("/hello", ::handleResponseBody)
+            post("/echo", ::handleEchoRequest)
+            get("/error", ::handleForceError)
+            path(idDescriptor) {
+                get("/hello", ::handleNamedResponseBody)
+            }
+        }
     }
     val pellet = pelletServer {
         logRequests = false

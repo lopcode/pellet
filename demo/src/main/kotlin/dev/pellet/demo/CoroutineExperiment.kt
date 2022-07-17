@@ -45,7 +45,7 @@ private fun CoroutineScope.launchPerCount(
         if (duration.toSeconds() > runtimeSeconds) {
             break
         }
-        launch(Dispatchers.Default) {
+        launch(Dispatchers.IO) {
             counter.incrementAndGet()
         }
     }
@@ -57,7 +57,7 @@ private fun CoroutineScope.launchPerProcessor(
 ) {
     val start = Instant.now()
     val processors = Runtime.getRuntime().availableProcessors()
-    val supervisor = SupervisorJob() + Dispatchers.Default
+    val supervisor = SupervisorJob() + Dispatchers.IO
     (0..processors).map {
         launch(supervisor) {
             while (isActive) {
