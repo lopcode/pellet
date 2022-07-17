@@ -83,9 +83,9 @@ class PelletServer(
         val accepter = NIOSocketAccepter(pool)
         val handler = HTTPRequestHandler(spec.router, pool, logRequests)
         val nioProcessorCount = 1
-        val coroutineScope = CoroutineScope(Dispatchers.IO + supervisorContext)
         val processorCount = Runtime.getRuntime().availableProcessors()
         val workerDispatcher = Dispatchers.IO.limitedParallelism(processorCount * 4)
+        val coroutineScope = CoroutineScope(workerDispatcher + supervisorContext)
         val workerCount = processorCount * 2
         val workerScope = CoroutineScope(workerDispatcher + supervisorContext)
         val workQueue = ArrayBlockingQueue<IncomingMessageWorkItem>(8192)

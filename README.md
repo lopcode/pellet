@@ -173,6 +173,31 @@ Content-Type: application/json
 }
 ```
 
+You can group related paths, and type-safe path components, when building a router:
+```kotlin
+val idDescriptor = uuidDescriptor("id")
+val router = httpRouter {
+    get("/", ::handleRoot)
+    path("/v1") {
+        get("/hello", ::handleHello)
+        post("/echo", ::handleEcho)
+        get("/error", ::handleForceError)
+        path(idDescriptor) {
+            get("/hello", ::handleNamedHello)
+        }
+    }
+}
+```
+
+Which will produce the following route table:
+```
+GET / -> ::handleRoot
+GET /v1/hello -> ::handleHello
+POST /v1/echo -> ::handleEcho
+GET /v1/error -> ::handleForceError
+GET /v1/{id:uuid}/hello -> ::handleNamedHello
+```
+
 It's easy to decode an incoming request body:
 ```kotlin
 @kotlinx.serialization.Serializable

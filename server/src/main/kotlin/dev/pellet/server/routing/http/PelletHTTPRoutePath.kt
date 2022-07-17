@@ -20,10 +20,22 @@ public data class PelletHTTPRoutePath(
         val joinedComponents = components.joinToString("/") {
             when (it) {
                 is Component.Plain -> it.string
-                is Component.Variable -> "{${it.name}}"
+                is Component.Variable -> {
+                    if (it.visualType != null) {
+                        "{${it.name}:${it.visualType}}"
+                    } else {
+                        "{${it.name}}"
+                    }
+                }
             }
         }
         path = "/$joinedComponents"
+    }
+
+    fun prefixedWith(routePath: PelletHTTPRoutePath): PelletHTTPRoutePath {
+        return PelletHTTPRoutePath(
+            components = routePath.components + this.components
+        )
     }
 
     override fun toString(): String {
@@ -33,7 +45,7 @@ public data class PelletHTTPRoutePath(
     sealed class Component {
 
         data class Plain(val string: String) : Component()
-        data class Variable(val name: String) : Component()
+        data class Variable(val name: String, val visualType: String?) : Component()
     }
 
     public class Builder {
@@ -56,12 +68,12 @@ public data class PelletHTTPRoutePath(
         }
 
         fun addVariable(variableName: String): Builder {
-            components += Component.Variable(variableName)
+            components += Component.Variable(variableName, null)
             return this
         }
 
         fun addVariable(descriptor: RouteVariableDescriptor<*>): Builder {
-            components += Component.Variable(descriptor.name)
+            components += Component.Variable(descriptor.name, descriptor.visualType)
             return this
         }
 
