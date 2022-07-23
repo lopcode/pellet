@@ -56,7 +56,10 @@ internal class HTTPRequestHandler(
         const val responseDurationKey = "response.duration_ms"
     }
 
-    override suspend fun handle(output: HTTPRequestMessage, client: PelletServerClient) {
+    override suspend fun handle(
+        output: HTTPRequestMessage,
+        client: PelletServerClient
+    ) {
         val timer = PelletTimer()
         val responder = PelletHTTPResponder(client, pool)
         val resolvedRoute = router.route(output)

@@ -22,50 +22,42 @@ class PelletHTTPRouter : HTTPRouting {
     override fun route(
         message: HTTPRequestMessage
     ): HTTPRouting.ResolvedRoute? {
-        val incomingRoutePath = PelletHTTPRoutePath.parse(message.requestLine.resourceUri.path)
+        val incomingComponents = PelletHTTPRoutePath.parsePlainComponents(message.requestLine.resourceUri.path)
         val validRoutes = internalRoutes[message.requestLine.method.rawMethod]
             ?: return null
-        return resolve(incomingRoutePath, validRoutes)
+        return resolve(incomingComponents, validRoutes)
     }
 
     private fun resolve(
-        incomingRoutePath: PelletHTTPRoutePath,
+        incomingComponents: List<PelletHTTPRoutePath.Component.Plain>,
         candidates: List<PelletHTTPRoute>
     ): HTTPRouting.ResolvedRoute? {
-        val size = incomingRoutePath.components.size
-        val incomingComponents = incomingRoutePath.components.map {
-            if (it !is PelletHTTPRoutePath.Component.Plain) {
-                return null
-            }
-            return@map it
-        }
-        val matchedRoutes = candidates
+        val size = incomingComponents.size
+        val matchedRoute = candidates
             .filter { it.routePath.components.size == size }
-            .filter { candidate ->
+            .firstOrNull { candidate ->
                 candidate.routePath.components.forEachIndexed { index, component ->
-                    if (component is PelletHTTPRoutePath.Component.Plain) {
-                        // todo: figure out URL case sensitivity
-                        val matches = component.string.equals(
-                            incomingComponents[index].string,
-                            ignoreCase = true
-                        )
-                        if (!matches) {
-                            return@filter false
+                    when (component) {
+                        is PelletHTTPRoutePath.Component.Plain -> {
+                            // todo: figure out URL case sensitivity
+                            val matches = component.string.equals(
+                                incomingComponents[index].string,
+                                ignoreCase = true
+                            )
+                            if (!matches) {
+                                return@firstOrNull false
+                            }
+                            return@forEachIndexed
                         }
-                        return@forEachIndexed
-                    }
-                    if (component !is PelletHTTPRoutePath.Component.Variable) {
-                        return@filter false
+                        is PelletHTTPRoutePath.Component.Variable -> {
+                            // permitted - continue
+                        }
                     }
                 }
-                return@filter true
+                return@firstOrNull true
             }
-
-        if (matchedRoutes.size > 1) {
-            logger.warn { "multiple routes matched an incoming request" }
-        }
-        val matchedRoute = matchedRoutes.firstOrNull()
             ?: return null
+
         val valueMap = mutableMapOf<String, String>()
         matchedRoute.routePath.components.forEachIndexed { index, component ->
             if (component is PelletHTTPRoutePath.Component.Variable) {

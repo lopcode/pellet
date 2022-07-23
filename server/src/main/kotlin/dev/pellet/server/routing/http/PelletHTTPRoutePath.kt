@@ -13,6 +13,20 @@ public data class PelletHTTPRoutePath(
                 .addComponents(rawPath)
                 .build()
         }
+
+        internal fun parsePlainComponents(rawPath: String): List<Component.Plain> {
+            return rawPath
+                .split("/")
+                .mapNotNull {
+                    val trimmedString = it
+                        .removePrefix("/")
+                        .removeSuffix("/")
+                    if (trimmedString.isEmpty()) {
+                        return@mapNotNull null
+                    }
+                    Component.Plain(trimmedString)
+                }
+        }
     }
 
     val path: String
@@ -53,17 +67,7 @@ public data class PelletHTTPRoutePath(
         private var components = mutableListOf<Component>()
 
         fun addComponents(string: String): Builder {
-            components += string
-                .split("/")
-                .mapNotNull {
-                    val trimmedString = it
-                        .removePrefix("/")
-                        .removeSuffix("/")
-                    if (trimmedString.isEmpty()) {
-                        return@mapNotNull null
-                    }
-                    Component.Plain(trimmedString)
-                }
+            components += parsePlainComponents(string)
             return this
         }
 
