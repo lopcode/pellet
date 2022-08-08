@@ -205,6 +205,7 @@ class PelletRoutePathBuilder(
 class PelletServerBuilder {
 
     var logRequests: Boolean = true
+    var maxWorkerCount: Int? = null
     val connectors = mutableListOf<PelletConnector>()
 
     fun httpConnector(lambda: (@PelletBuilderDslTag HTTPConnectorBuilder).() -> Unit) {
@@ -214,7 +215,9 @@ class PelletServerBuilder {
     }
 
     internal fun build(): PelletServer {
-        return PelletServer(logRequests, connectors)
+        val maxWorkerCount = this.maxWorkerCount
+            ?: Runtime.getRuntime().availableProcessors()
+        return PelletServer(logRequests, maxWorkerCount, connectors)
     }
 }
 

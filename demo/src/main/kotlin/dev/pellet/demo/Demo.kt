@@ -31,6 +31,7 @@ fun main() = runBlocking {
     }
     val pellet = pelletServer {
         logRequests = false
+        maxWorkerCount = 10
         httpConnector {
             endpoint = PelletConnector.Endpoint(
                 hostname = "localhost",
