@@ -4,7 +4,7 @@ import dev.pellet.logging.pelletLogger
 import dev.pellet.server.buffer.AlwaysAllocatingPelletBufferPool
 import dev.pellet.server.buffer.PelletBufferPooling
 import dev.pellet.server.codec.http.HTTPMessageCodec
-import dev.pellet.server.codec.http.IncomingMessageWorkItem
+import dev.pellet.server.codec.http.HTTPRequestMessage
 import dev.pellet.server.metrics.PelletTimer
 import dev.pellet.server.nio.NIOSocketAccepter
 import dev.pellet.server.nio.NIOSocketProcessor
@@ -15,21 +15,19 @@ import kotlinx.coroutines.CompletableJob
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.newFixedThreadPoolContext
 import java.net.InetSocketAddress
 import java.nio.channels.Selector
 import java.nio.channels.SocketChannel
-import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.BlockingQueue
 import java.util.concurrent.atomic.AtomicInteger
 
 class PelletServer(
     private val logRequests: Boolean,
+    private val maxWorkerCount: Int,
     private val connectors: List<PelletConnector>
 ) {
 
@@ -40,6 +38,10 @@ class PelletServer(
         if (connectors.isEmpty()) {
             throw RuntimeException("Please define at least one connector")
         }
+        val maxWorkerCount = maxWorkerCount.coerceIn(
+            minimumValue = connectors.size * 4,
+            maximumValue = Runtime.getRuntime().availableProcessors() * 10
+        )
 
         val startupTimer = PelletTimer()
 
@@ -47,11 +49,11 @@ class PelletServer(
         logger.info { "Get help, give feedback, and support development at https://www.pellet.dev" }
 
         val supervisorContext = SupervisorJob()
-
+        val workerDispatcher = newFixedThreadPoolContext(maxWorkerCount, "worker")
         val connectorJobs = connectors
             .map {
                 when (it) {
-                    is PelletConnector.HTTP -> createHTTPNIOConnectorJob(it, pool, supervisorContext)
+                    is PelletConnector.HTTP -> createHTTPNIOConnectorJob(it, pool, supervisorContext, workerDispatcher)
                 }
             }
             .flatten()
@@ -61,6 +63,7 @@ class PelletServer(
         }
 
         supervisorContext.invokeOnCompletion {
+            workerDispatcher.close()
             logger.info(it) { "Pellet server stopped" }
         }
 
@@ -74,7 +77,8 @@ class PelletServer(
     private fun createHTTPNIOConnectorJob(
         spec: PelletConnector.HTTP,
         pool: PelletBufferPooling,
-        supervisorContext: CompletableJob
+        supervisorContext: CompletableJob,
+        parentDispatcher: ExecutorCoroutineDispatcher
     ): List<Job> {
         logger.info { "Starting connector: $spec" }
         validateAndPrintRoutes(spec.router)
@@ -83,12 +87,8 @@ class PelletServer(
         val accepter = NIOSocketAccepter(pool)
         val handler = HTTPRequestHandler(spec.router, pool, logRequests)
         val nioProcessorCount = 1
-        val processorCount = Runtime.getRuntime().availableProcessors()
-        val workerDispatcher = Dispatchers.IO.limitedParallelism(processorCount * 4)
-        val coroutineScope = CoroutineScope(workerDispatcher + supervisorContext)
-        val workerCount = processorCount * 2
-        val workerScope = CoroutineScope(workerDispatcher + supervisorContext)
-        val workQueue = ArrayBlockingQueue<IncomingMessageWorkItem>(8192)
+        val coroutineScope = CoroutineScope(parentDispatcher + supervisorContext)
+        val workerScope = CoroutineScope(parentDispatcher + supervisorContext)
         val readSelectors = (0 until nioProcessorCount)
             .map {
                 Selector.open()
@@ -98,17 +98,6 @@ class PelletServer(
                 val selector = readSelectors[index]
                 val processor = NIOSocketProcessor(pool, selector)
                 processor.run(coroutineScope)
-            }
-        val workerJobs = (0 until workerCount)
-            .map {
-                workerScope.launch(
-                    start = CoroutineStart.LAZY,
-                    context = CoroutineName("worker $it")
-                ) {
-                    while (isActive) {
-                        processWorkItem(workQueue, handler)
-                    }
-                }
             }
         val roundRobinIndex = AtomicInteger(0)
         val selector: (SocketChannel) -> Selector = {
@@ -123,10 +112,10 @@ class PelletServer(
             start = CoroutineStart.LAZY,
             context = CoroutineName("accepter")
         ) {
-            acceptHTTPClients(accepter, connectorAddress, selector, pool, supervisorContext, workQueue)
+            acceptHTTPClients(accepter, connectorAddress, selector, pool, supervisorContext, workerScope, handler)
         }
 
-        return workerJobs + processorJobs + listOf(accepterJob)
+        return processorJobs + listOf(accepterJob)
     }
 
     private suspend fun acceptHTTPClients(
@@ -135,7 +124,8 @@ class PelletServer(
         selector: (SocketChannel) -> Selector,
         pool: PelletBufferPooling,
         supervisorContext: CompletableJob,
-        workQueue: BlockingQueue<IncomingMessageWorkItem>
+        scope: CoroutineScope,
+        handler: HTTPRequestHandler
     ) {
         val result = runCatching {
             accepter.run(
@@ -143,7 +133,9 @@ class PelletServer(
                 selector,
                 codecFactory = {
                     HTTPMessageCodec(pool) { message, client ->
-                        workQueue.put(IncomingMessageWorkItem(message, client))
+                        scope.launch {
+                            handleIncomingMessage(handler, client, message)
+                        }
                     }
                 }
             )
@@ -155,20 +147,18 @@ class PelletServer(
         }
     }
 
-    private suspend fun processWorkItem(
-        workQueue: BlockingQueue<IncomingMessageWorkItem>,
-        handler: HTTPRequestHandler
+    private suspend fun handleIncomingMessage(
+        handler: HTTPRequestHandler,
+        client: PelletServerClient,
+        message: HTTPRequestMessage
     ) {
-        val workItem = runInterruptible {
-            workQueue.take()
-        }
         val handleResult = runCatching {
-            handler.handle(workItem.message, workItem.client)
+            handler.handle(message, client)
         }
         val exception = handleResult.exceptionOrNull()
         if (exception != null) {
-            logger.warn(exception) { "failed to handle work for client ${workItem.client} " }
-            workItem.client.close(
+            logger.warn(exception) { "failed to handle work for client $client " }
+            client.close(
                 CloseReason.ServerException(exception)
             )
         }
