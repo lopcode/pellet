@@ -1,7 +1,7 @@
 plugins {
     application
-    id("com.github.johnrengelman.shadow") version "7.1.0"
-    kotlin("plugin.serialization") version "1.7.0"
+    alias(libs.plugins.shadow)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 group = "dev.pellet"
@@ -19,13 +19,11 @@ dependencies {
     implementation(project(":logging"))
     implementation(project(":server"))
 
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
-
-    implementation("io.ktor:ktor-server-core:1.6.7")
-    implementation("io.ktor:ktor-server-netty:1.6.7")
-
-    implementation("io.jooby:jooby:2.13.0")
-    implementation("io.jooby:jooby-netty:2.13.0")
+    implementation(libs.kotlin.serialization)
+    implementation(libs.ktor.core)
+    implementation(libs.ktor.netty)
+    implementation(libs.jooby.core)
+    implementation(libs.jooby.netty)
 }
 
 application {

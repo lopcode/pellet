@@ -2,8 +2,8 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 
 plugins {
-    kotlin("jvm") version "1.7.0"
-    id("org.jlleitschuh.gradle.ktlint") version "10.2.0"
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.ktlint)
     id("maven-publish")
 }
 
@@ -59,18 +59,18 @@ subprojects {
     dependencies {
         implementation(platform(kotlin("bom")))
         implementation(kotlin("stdlib-jdk8"))
-        implementation(platform("org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.6.1"))
+        implementation(platform(rootProject.libs.kotlin.coroutines.bom))
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j")
-        implementation("org.slf4j:slf4j-api:1.7.32")
+        implementation(rootProject.libs.slf4j.api)
 
         testImplementation(kotlin("test"))
         testImplementation(kotlin("test-junit"))
 
         integrationTestImplementation(kotlin("test"))
         integrationTestImplementation(kotlin("test-junit"))
-        integrationTestImplementation((platform("com.squareup.okhttp3:okhttp-bom:4.9.3")))
+        integrationTestImplementation(platform(rootProject.libs.okhttp.bom))
         integrationTestImplementation("com.squareup.okhttp3:okhttp")
     }
 

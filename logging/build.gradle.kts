@@ -3,7 +3,7 @@ import java.net.URI
 
 plugins {
     `java-library`
-    kotlin("plugin.serialization") version "1.7.0"
+    alias(libs.plugins.kotlin.serialization)
     id("maven-publish")
     id("signing")
 }
@@ -21,7 +21,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
+    implementation(libs.kotlin.serialization)
 }
 
 val publishingUser = System.getenv("PUBLISHING_USER")
