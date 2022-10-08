@@ -105,7 +105,7 @@ data class PelletHTTPRouteContext(
     }
 
     inline fun <reified T : Any> decodeRequestBody(
-        decoder: Json
+        decoder: Json = Json
     ): Result<T> {
         if (entity == null) {
             return Result.failure(

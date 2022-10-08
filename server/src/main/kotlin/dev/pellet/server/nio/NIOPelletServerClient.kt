@@ -63,8 +63,8 @@ class NIOPelletServerClient(
         }
     }
 
-    override fun close(source: CloseReason): Result<Unit> {
-        logger.debug { "closed ${trackedSocket.channel} (initiator: $source)" }
+    override fun close(reason: CloseReason): Result<Unit> {
+        logger.debug { "closed ${trackedSocket.channel} (initiator: $reason)" }
         return runCatching {
             trackedSocket.channel.close()
         }

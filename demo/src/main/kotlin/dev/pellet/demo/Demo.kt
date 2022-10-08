@@ -89,7 +89,7 @@ private suspend fun handleEchoRequest(
 ): HTTPRouteResponse {
     logger.debug { "got echo POST request: ${context.rawMessage}" }
 
-    val requestBody = context.decodeRequestBody<RequestBody>(Json).getOrElse {
+    val requestBody = context.decodeRequestBody<RequestBody>().getOrElse {
         logger.debug(it) { "failed to decode json body" }
 
         return HTTPRouteResponse.Builder()
