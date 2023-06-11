@@ -63,7 +63,7 @@ class QueryParserTests {
             mapOf(
                 "a" to listOf(""),
                 "c" to listOf("d"),
-                "e" to listOf(null),
+                "e" to listOf(null)
             )
         )
         assertSuccess(expected, parsed)
@@ -75,7 +75,7 @@ class QueryParserTests {
         val parsed = QueryParser.parseEncodedQuery(query)
         val expected = QueryParameters(
             mapOf(
-                "a" to listOf("b=c=d"),
+                "a" to listOf("b=c=d")
             )
         )
         assertSuccess(expected, parsed)
@@ -90,7 +90,7 @@ class QueryParserTests {
                 "a" to listOf("&"),
                 "b" to listOf(null),
                 "c" to listOf(""),
-                "d" to listOf("hello"),
+                "d" to listOf("hello")
             )
         )
         assertSuccess(expected, parsed)
@@ -107,7 +107,7 @@ class QueryParserTests {
             "%x",
             "=",
             "==",
-            "&=&=",
+            "&=&="
         )
         queries.forEach { query ->
             val result = QueryParser.parseEncodedQuery(query)

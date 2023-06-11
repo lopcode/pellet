@@ -63,7 +63,7 @@ class MediaTypeParserTests {
             type = "application",
             subtype = "json",
             parameters = listOf(
-                "charset" to "utf-8",
+                "charset" to "utf-8"
             )
         )
         assertSuccess(expected, result)
@@ -77,7 +77,7 @@ class MediaTypeParserTests {
             type = "application",
             subtype = "json",
             parameters = listOf(
-                "charset" to "\"utf-8",
+                "charset" to "\"utf-8"
             )
         )
         assertSuccess(expected, result)
@@ -96,7 +96,7 @@ class MediaTypeParserTests {
             "/plain",
             ";",
             ";/",
-            "/;",
+            "/;"
         )
         testCases.forEach { testCase ->
             val result = MediaTypeParser.parse(testCase)

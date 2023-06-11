@@ -2,15 +2,12 @@
 
 [![Maven Central](https://img.shields.io/maven-central/v/dev.pellet/pellet-server?style=flat-square)](https://mvnrepository.com/artifact/dev.pellet)
 [![GitHub License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg?style=flat-square)](http://www.apache.org/licenses/LICENSE-2.0)
-[![Sponsor](https://img.shields.io/badge/Patreon-F96854?style=flat-square&logo=patreon&logoColor=white)](https://www.patreon.com/carrotcodes)
 
 Pellet is an opinionated Kotlin-first web framework that helps you write fast, concise, and correct backend services 🚀.
 
 Pellet handles a huge number of requests per second, has a tiny dependency graph (`kotlin-stdlib`, `kotlinx-coroutines`, and `slf4j-api`), and offers approximately one way of doing things. The framework's conciseness is achieved through functional composition, instead of traditional JVM approaches involving annotations and reflection.
 
 I write about building Pellet in a series on my blog: https://www.carrot.blog/series/pellet/
-
-You can support my work by sponsoring [on Patreon](https://www.patreon.com/carrotcodes) or [GitHub Sponsors](https://www.github.com/sponsors/carrotcodes) ⭐️
 
 ## Releases
 
@@ -246,7 +243,7 @@ You can find more examples in the `demo` subproject.
 This work is, unless otherwise stated, licensed under the Apache License, Version 2.0.
 
 ```
-Copyright 2021-2022 CarrotCodes
+Copyright 2021-2023 CarrotCodes
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

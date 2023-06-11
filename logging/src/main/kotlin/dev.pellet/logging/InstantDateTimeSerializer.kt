@@ -11,7 +11,8 @@ import java.time.format.DateTimeFormatter
 object InstantDateTimeSerializer : KSerializer<Instant> {
 
     override val descriptor = PrimitiveSerialDescriptor(
-        "Instant", PrimitiveKind.STRING
+        "Instant",
+        PrimitiveKind.STRING
     )
 
     override fun serialize(

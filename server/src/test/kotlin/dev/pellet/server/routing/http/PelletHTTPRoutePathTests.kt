@@ -21,7 +21,7 @@ class PelletHTTPRoutePathTests {
         val sut = PelletHTTPRoutePath(
             components = listOf(
                 PelletHTTPRoutePath.Component.Plain("hello"),
-                PelletHTTPRoutePath.Component.Plain("world"),
+                PelletHTTPRoutePath.Component.Plain("world")
             )
         )
 
@@ -35,7 +35,7 @@ class PelletHTTPRoutePathTests {
         val sut = PelletHTTPRoutePath(
             components = listOf(
                 PelletHTTPRoutePath.Component.Plain("hello"),
-                PelletHTTPRoutePath.Component.Plain("world"),
+                PelletHTTPRoutePath.Component.Plain("world")
             )
         )
 
