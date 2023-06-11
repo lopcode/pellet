@@ -1,15 +1,6 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 
-// Without these suppressions version catalog usage here and in other build
-// files is marked red by IntelliJ:
-// https://youtrack.jetbrains.com/issue/KTIJ-19369.
-@Suppress(
-    "DSL_SCOPE_VIOLATION",
-    "MISSING_DEPENDENCY_CLASS",
-    "UNRESOLVED_REFERENCE_WRONG_RECEIVER",
-    "FUNCTION_CALL_EXPECTED"
-)
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.ktlint)
@@ -57,6 +48,7 @@ subprojects {
     configurations["integrationTestRuntimeOnly"].extendsFrom(configurations.runtimeOnly.get())
 
     task<Test>("integrationTest") {
+        useJUnitPlatform()
         description = "Runs integration tests."
         group = "verification"
 
@@ -74,16 +66,17 @@ subprojects {
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j")
         implementation(rootProject.libs.slf4j.api)
 
-        testImplementation(kotlin("test"))
-        testImplementation(kotlin("test-junit"))
+        testImplementation(kotlin("test-junit5"))
+        testImplementation(rootProject.libs.junit.jupiter)
 
-        integrationTestImplementation(kotlin("test"))
-        integrationTestImplementation(kotlin("test-junit"))
+        integrationTestImplementation(kotlin("test-junit5"))
+        integrationTestImplementation(rootProject.libs.junit.jupiter)
         integrationTestImplementation(platform(rootProject.libs.okhttp.bom))
         integrationTestImplementation("com.squareup.okhttp3:okhttp")
     }
 
     tasks.test {
+        useJUnitPlatform()
         testLogging {
             events = TestLogEvent.values().toSet() - TestLogEvent.STARTED
             exceptionFormat = TestExceptionFormat.FULL

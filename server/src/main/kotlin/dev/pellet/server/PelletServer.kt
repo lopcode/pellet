@@ -46,7 +46,7 @@ class PelletServer(
         val startupTimer = PelletTimer()
 
         logger.info { "Pellet server starting..." }
-        logger.info { "Get help, give feedback, and support development at https://www.pellet.dev" }
+        logger.info { "Get help and give feedback at https://www.pellet.dev" }
 
         val supervisorContext = SupervisorJob()
         val workerDispatcher = newFixedThreadPoolContext(maxWorkerCount, "worker")
