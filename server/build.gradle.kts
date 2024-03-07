@@ -30,7 +30,7 @@ tasks.jacocoTestReport {
 }
 
 jacoco {
-    toolVersion = "0.8.8"
+    toolVersion = "0.8.11"
 }
 
 val publishingUser = System.getenv("PUBLISHING_USER")
@@ -54,11 +54,11 @@ publishing {
             pom {
                 name.set("Pellet Server")
                 description.set("An opinionated, Kotlin-first web framework that helps you write fast, concise, and correct backend services 🚀.")
-                url.set("https://github.com/CarrotCodes/Pellet")
+                url.set("https://github.com/lopcode/Pellet")
                 licenses {
                     license {
                         name.set("Apache License, Version 2.0")
-                        url.set("https://github.com/CarrotCodes/Pellet/blob/main/LICENSE.txt")
+                        url.set("https://github.com/lopcode/Pellet/blob/main/LICENSE.txt")
                     }
                 }
                 developers {
@@ -68,7 +68,7 @@ publishing {
                     }
                 }
                 scm {
-                    url.set("https://github.com/CarrotCodes/Pellet.git")
+                    url.set("https://github.com/lopcode/Pellet.git")
                 }
             }
         }

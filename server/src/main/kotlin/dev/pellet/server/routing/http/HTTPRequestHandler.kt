@@ -5,7 +5,6 @@ import dev.pellet.logging.logElements
 import dev.pellet.logging.pelletLogger
 import dev.pellet.server.CloseReason
 import dev.pellet.server.PelletServerClient
-import dev.pellet.server.buffer.PelletBufferPooling
 import dev.pellet.server.codec.CodecHandler
 import dev.pellet.server.codec.http.ContentTypeParser
 import dev.pellet.server.codec.http.HTTPEntity
@@ -26,7 +25,6 @@ import java.time.temporal.ChronoField
 
 internal class HTTPRequestHandler(
     private val router: HTTPRouting,
-    private val pool: PelletBufferPooling,
     private val logRequests: Boolean
 ) : CodecHandler<HTTPRequestMessage> {
 
@@ -56,12 +54,12 @@ internal class HTTPRequestHandler(
         const val responseDurationKey = "response.duration_ms"
     }
 
-    override suspend fun handle(
+    override fun handle(
         output: HTTPRequestMessage,
         client: PelletServerClient
     ) {
         val timer = PelletTimer()
-        val responder = PelletHTTPResponder(client, pool)
+        val responder = PelletHTTPResponder(client)
         val resolvedRoute = router.route(output)
         if (resolvedRoute == null) {
             val response = HTTPRouteResponse.Builder()
@@ -75,10 +73,9 @@ internal class HTTPRequestHandler(
 
         val connectionHeader = output.headers.getSingleOrNull(HTTPHeaderConstants.connection)
         handleConnectionHeader(connectionHeader, client)
-        output.release(pool)
     }
 
-    private suspend fun handleRoute(
+    private fun handleRoute(
         resolvedRoute: HTTPRouting.ResolvedRoute,
         rawMessage: HTTPRequestMessage,
         client: PelletServerClient
@@ -126,7 +123,7 @@ internal class HTTPRequestHandler(
         }
     }
 
-    private suspend fun respond(
+    private fun respond(
         request: HTTPRequestMessage,
         response: HTTPRouteResponse,
         responder: PelletHTTPResponder,

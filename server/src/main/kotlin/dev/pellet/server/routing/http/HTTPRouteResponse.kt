@@ -1,6 +1,5 @@
 package dev.pellet.server.routing.http
 
-import dev.pellet.server.buffer.PelletBuffer
 import dev.pellet.server.codec.http.ContentType
 import dev.pellet.server.codec.http.ContentTypeSerialiser
 import dev.pellet.server.codec.http.ContentTypes
@@ -71,7 +70,7 @@ data class HTTPRouteResponse(
             byteBuffer: ByteBuffer,
             rawContentType: String
         ): Builder {
-            this.entity = HTTPEntity.Content(PelletBuffer(byteBuffer))
+            this.entity = HTTPEntity.Content(byteBuffer)
             this.headers[HTTPHeaderConstants.contentType] = rawContentType
             return this
         }

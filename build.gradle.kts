@@ -24,13 +24,13 @@ subprojects {
         withSourcesJar()
 
         toolchain {
-            languageVersion.set(JavaLanguageVersion.of(17))
+            languageVersion.set(JavaLanguageVersion.of(21))
         }
     }
 
     kotlin {
         jvmToolchain {
-            this.languageVersion.set(JavaLanguageVersion.of("17"))
+            this.languageVersion.set(JavaLanguageVersion.of("21"))
         }
     }
 
@@ -60,16 +60,14 @@ subprojects {
     dependencies {
         implementation(platform(kotlin("bom")))
         implementation(kotlin("stdlib-jdk8"))
-        implementation(platform(rootProject.libs.kotlin.coroutines.bom))
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j")
         implementation(rootProject.libs.slf4j.api)
+        implementation(rootProject.libs.kotlinx.io)
 
         testImplementation(kotlin("test-junit5"))
         testImplementation(rootProject.libs.junit.jupiter)
 
         integrationTestImplementation(kotlin("test-junit5"))
+        integrationTestImplementation(rootProject.libs.kotlinx.coroutines)
         integrationTestImplementation(rootProject.libs.junit.jupiter)
         integrationTestImplementation(platform(rootProject.libs.okhttp.bom))
         integrationTestImplementation("com.squareup.okhttp3:okhttp")

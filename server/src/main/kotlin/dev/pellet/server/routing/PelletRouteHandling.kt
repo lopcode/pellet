@@ -2,7 +2,7 @@ package dev.pellet.server.routing
 
 fun interface PelletRouteHandling<ContextType, ResponseType> {
 
-    suspend fun handle(
+    fun handle(
         context: ContextType
     ): ResponseType
 }

@@ -4,7 +4,7 @@ import dev.pellet.server.PelletServerClient
 
 interface CodecHandler<T : Any> {
 
-    suspend fun handle(
+    fun handle(
         output: T,
         client: PelletServerClient
     )

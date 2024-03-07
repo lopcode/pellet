@@ -14,7 +14,6 @@ import kotlinx.coroutines.future.await
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.yield
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.ConnectionPool
@@ -27,6 +26,7 @@ import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.concurrent.thread
 import kotlin.test.Test
 
 class NoContentBenchmarkTest {
@@ -54,7 +54,12 @@ class NoContentBenchmarkTest {
                 }
             }
         }
-        val job = pellet.start()
+        val job = thread(
+            start = true,
+            name = "pellet-main-thread"
+        ) {
+            pellet.start()
+        }
 
         val client = OkHttpClient().newBuilder()
             .connectionPool(ConnectionPool(30, 1L, TimeUnit.MINUTES))
@@ -96,7 +101,8 @@ class NoContentBenchmarkTest {
                 delay(1000L)
             }
         }.join()
-        job.cancel()
+        job.interrupt()
+        job.join()
 
         val endTime = Instant.now()
         val timeElapsedMs = Duration.between(startTime, endTime).toMillis()
@@ -113,8 +119,7 @@ class NoContentBenchmarkTest {
             val future = CompletableFuture<Response>()
             client.newCall(request).enqueue(toCallback(future))
             val response = future.await()
-            assert(response.code == 204)
-            yield()
+            require(response.code == 204)
         }
     }
 

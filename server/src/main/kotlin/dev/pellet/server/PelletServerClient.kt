@@ -1,15 +1,15 @@
 package dev.pellet.server
 
-import dev.pellet.server.buffer.PelletBuffer
 import dev.pellet.server.codec.Codec
+import kotlinx.io.Buffer
 
 interface PelletServerClient {
 
     val remoteHostString: String
     val codec: Codec
 
-    fun writeAndRelease(vararg buffer: PelletBuffer): Result<Long>
-    fun writeAndRelease(buffer: PelletBuffer): Result<Int>
+    fun write(vararg buffers: Buffer): Result<Long>
+    fun write(buffer: Buffer): Result<Long>
     fun close(reason: CloseReason): Result<Unit>
-    fun read(buffer: PelletBuffer): Result<Int>
+    fun read(buffer: Buffer): Result<Long>
 }

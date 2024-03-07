@@ -31,7 +31,6 @@ fun main() = runBlocking {
     }
     val pellet = pelletServer {
         logRequests = false
-        maxWorkerCount = 10
         httpConnector {
             endpoint = PelletConnector.Endpoint(
                 hostname = "localhost",
@@ -40,7 +39,7 @@ fun main() = runBlocking {
             router = sharedRouter
         }
     }
-    pellet.start().join()
+    pellet.start()
 }
 
 private fun simpleMain() = runBlocking {
@@ -60,10 +59,10 @@ private fun simpleMain() = runBlocking {
             }
         }
     }
-    pellet.start().join()
+    pellet.start()
 }
 
-private suspend fun handleRequest(
+private fun handleRequest(
     context: PelletHTTPRouteContext
 ): HTTPRouteResponse {
     logger.debug { "got request: ${context.rawMessage}" }
@@ -84,7 +83,7 @@ private data class ResponseBody(
     val message: String
 )
 
-private suspend fun handleEchoRequest(
+private fun handleEchoRequest(
     context: PelletHTTPRouteContext
 ): HTTPRouteResponse {
     logger.debug { "got echo POST request: ${context.rawMessage}" }
@@ -104,13 +103,13 @@ private suspend fun handleEchoRequest(
         .build()
 }
 
-private suspend fun handleForceError(
+private fun handleForceError(
     context: PelletHTTPRouteContext
 ): HTTPRouteResponse {
     throw RuntimeException("intentional error")
 }
 
-private suspend fun handleResponseBody(
+private fun handleResponseBody(
     context: PelletHTTPRouteContext
 ): HTTPRouteResponse {
     val responseBody = ResponseBody(message = "hello, world 🌎")
@@ -121,7 +120,7 @@ private suspend fun handleResponseBody(
         .build()
 }
 
-private suspend fun handleNamedResponseBody(
+private fun handleNamedResponseBody(
     context: PelletHTTPRouteContext
 ): HTTPRouteResponse {
     val id = context.pathParameter(idDescriptor).getOrThrow()

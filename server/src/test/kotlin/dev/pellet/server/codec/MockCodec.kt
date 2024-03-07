@@ -1,7 +1,7 @@
 package dev.pellet.server.codec
 
 import dev.pellet.server.PelletServerClient
-import dev.pellet.server.buffer.PelletBuffer
+import kotlinx.io.Buffer
 
 class MockCodec : Codec {
 
@@ -9,11 +9,7 @@ class MockCodec : Codec {
         TODO("Not yet implemented")
     }
 
-    override fun release() {
-        TODO("Not yet implemented")
-    }
-
-    override fun consume(buffer: PelletBuffer, client: PelletServerClient) {
+    override fun consume(buffer: Buffer, client: PelletServerClient) {
         TODO("Not yet implemented")
     }
 }

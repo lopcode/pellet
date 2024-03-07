@@ -12,13 +12,14 @@ dependencyResolutionManagement {
 
     versionCatalogs {
         create("libs") {
-            version("kotlin", "1.8.21")
+            version("kotlin", "1.9.22")
             version("ktor", "2.3.1")
             version("jooby", "2.16.1")
             library("junit-jupiter", "org.junit.jupiter:junit-jupiter:5.9.3")
-            library("kotlin-coroutines-bom", "org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.7.1")
             library("kotlin-serialization", "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
             library("slf4j-api", "org.slf4j:slf4j-api:1.7.32")
+            library("kotlinx-io", "org.jetbrains.kotlinx:kotlinx-io-core:0.3.2")
+            library("kotlinx-coroutines", "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
             library("okhttp-bom", "com.squareup.okhttp3:okhttp-bom:4.9.3")
             library("ktor-bom", "io.ktor", "ktor-bom").versionRef("ktor")
             library("ktor-core", "io.ktor", "ktor-server-core").versionRef("ktor")

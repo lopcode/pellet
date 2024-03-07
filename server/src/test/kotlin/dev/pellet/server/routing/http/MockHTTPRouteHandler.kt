@@ -4,7 +4,7 @@ import dev.pellet.server.responder.http.PelletHTTPRouteContext
 
 class MockHTTPRouteHandler : PelletHTTPRouteHandling {
 
-    override suspend fun handle(
+    override fun handle(
         context: PelletHTTPRouteContext
     ): HTTPRouteResponse {
         TODO("not stubbed")

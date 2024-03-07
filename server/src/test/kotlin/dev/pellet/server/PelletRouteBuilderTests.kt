@@ -7,14 +7,13 @@ import dev.pellet.server.routing.http.HTTPRouteResponse
 import dev.pellet.server.routing.http.PelletHTTPRoute
 import dev.pellet.server.routing.http.PelletHTTPRoutePath
 import dev.pellet.server.routing.uuidDescriptor
-import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class PelletRouteBuilderTests {
 
     @Test
-    fun `sense check no routes`() = runBlocking {
+    fun `sense check no routes`() {
         val sut = httpRouter {}
 
         val expectedRoutes = listOf<PelletHTTPRoute>()
@@ -22,7 +21,7 @@ class PelletRouteBuilderTests {
     }
 
     @Test
-    fun `sense check empty path`() = runBlocking {
+    fun `sense check empty path`() {
         val sut = httpRouter {
             path("hello") {
             }
@@ -33,7 +32,7 @@ class PelletRouteBuilderTests {
     }
 
     @Test
-    fun `get raw path`() = runBlocking {
+    fun `get raw path`() {
         val sut = httpRouter {
             get("/", ::handler)
         }
@@ -49,7 +48,7 @@ class PelletRouteBuilderTests {
     }
 
     @Test
-    fun `get route path`() = runBlocking {
+    fun `get route path`() {
         val routePath = PelletHTTPRoutePath.parse("/hello/world")
         val sut = httpRouter {
             get(routePath, ::handler)
@@ -66,7 +65,7 @@ class PelletRouteBuilderTests {
     }
 
     @Test
-    fun `get descriptor path`() = runBlocking {
+    fun `get descriptor path`() {
         val idDescriptor = uuidDescriptor("id")
         val idTwoDescriptor = uuidDescriptor("idtwo")
         val sut = httpRouter {
@@ -99,7 +98,7 @@ class PelletRouteBuilderTests {
     }
 
     @Test
-    fun `multiple nested paths`() = runBlocking {
+    fun `multiple nested paths`() {
         val sut = httpRouter {
             path("/hello") {
                 path("world") {
@@ -123,7 +122,7 @@ class PelletRouteBuilderTests {
     }
 
     @Test
-    fun `sense check methods`() = runBlocking {
+    fun `sense check methods`() {
         val sut = httpRouter {
             get("/", ::handler)
             put("/", ::handler)

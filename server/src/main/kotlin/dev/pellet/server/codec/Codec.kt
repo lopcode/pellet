@@ -1,7 +1,7 @@
 package dev.pellet.server.codec
 
 import dev.pellet.server.PelletServerClient
-import dev.pellet.server.buffer.PelletBuffer
+import kotlinx.io.Buffer
 
 /**
  * A codec maintains internal state, such that it can interpret a bag of bytes given to it, and output objects to a
@@ -13,9 +13,12 @@ import dev.pellet.server.buffer.PelletBuffer
 interface Codec {
 
     fun clear()
-    fun release()
+
+    /**
+     * Process bytes stored in the buffer, such that it can be safely recycled
+     */
     fun consume(
-        buffer: PelletBuffer,
+        buffer: Buffer,
         client: PelletServerClient
     )
 }
