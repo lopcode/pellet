@@ -63,7 +63,7 @@ publishing {
                 }
                 developers {
                     developer {
-                        id.set("carrotcodes")
+                        id.set("lopcode")
                         name.set("Carrot")
                     }
                 }
@@ -81,6 +81,7 @@ val signingKeyPassphrase = System.getenv("SIGNING_KEY_PASSPHRASE")
 if (signingKey != null && signingKey != "") {
     project.ext["signing.gnupg.keyName"] = signingKey
     project.ext["signing.gnupg.passphrase"] = signingKeyPassphrase
+    project.ext["signing.gnupg.executable"] = "/usr/local/bin/gpg"
 
     signing {
         useGpgCmd()
