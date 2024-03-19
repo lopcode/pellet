@@ -2,8 +2,6 @@ package dev.pellet.server.responder.http
 
 import dev.pellet.logging.pelletLogger
 import dev.pellet.server.PelletServerClient
-import dev.pellet.server.buffer.PelletBuffer
-import dev.pellet.server.buffer.PelletBufferPooling
 import dev.pellet.server.codec.http.HTTPCharacters
 import dev.pellet.server.codec.http.HTTPEntity
 import dev.pellet.server.codec.http.HTTPHeader
@@ -11,10 +9,11 @@ import dev.pellet.server.codec.http.HTTPHeaderConstants
 import dev.pellet.server.codec.http.HTTPHeaders
 import dev.pellet.server.codec.http.HTTPResponseMessage
 import dev.pellet.server.codec.http.HTTPStatusLine
+import kotlinx.io.Buffer
+import kotlinx.io.bytestring.ByteString
 
 internal class PelletHTTPResponder(
-    private val client: PelletServerClient,
-    private val pool: PelletBufferPooling
+    private val client: PelletServerClient
 ) : PelletHTTPResponding {
 
     private val logger = pelletLogger<PelletHTTPResponder>()
@@ -23,34 +22,32 @@ internal class PelletHTTPResponder(
         val effectiveResponse = buildEffectiveResponse(message)
         return writeResponse(
             effectiveResponse,
-            client,
-            pool
+            client
         ).map { }
     }
 }
 
 private fun writeResponse(
     message: HTTPResponseMessage,
-    client: PelletServerClient,
-    pool: PelletBufferPooling
+    client: PelletServerClient
 ): Result<Unit> {
-    val nonEntityBuffer = pool.provide()
+    ByteString()
+    val nonEntityBuffer = Buffer()
         .appendStatusLine(message.statusLine)
         .appendHeaders(message.headers)
-        .flip()
     if (message.entity !is HTTPEntity.Content) {
         return client
-            .writeAndRelease(nonEntityBuffer)
+            .write(nonEntityBuffer)
             .map {}
     }
     return client
-        .writeAndRelease(nonEntityBuffer, message.entity.buffer)
+        .write(nonEntityBuffer, message.entity.buffer)
         .map {}
 }
 
-private fun PelletBuffer.appendStatusLine(
+private fun Buffer.appendStatusLine(
     statusLine: HTTPStatusLine
-): PelletBuffer {
+): Buffer {
     return this
         .put(statusLine.version.toByteArray(Charsets.US_ASCII))
         .put(HTTPCharacters.SPACE_BYTE)
@@ -60,9 +57,9 @@ private fun PelletBuffer.appendStatusLine(
         .putCRLF()
 }
 
-private fun PelletBuffer.appendHeaders(
+private fun Buffer.appendHeaders(
     headers: HTTPHeaders
-): PelletBuffer {
+): Buffer {
     headers.forEach { key, values ->
         // todo: what happens when different values have different cased keys?
         // for now - choose the first one
@@ -77,7 +74,7 @@ private fun PelletBuffer.appendHeaders(
     return this.putCRLF()
 }
 
-private fun PelletBuffer.putCRLF(): PelletBuffer {
+private fun Buffer.putCRLF(): Buffer {
     return this
         .put(HTTPCharacters.CARRIAGE_RETURN_BYTE)
         .put(HTTPCharacters.LINE_FEED_BYTE)
@@ -91,7 +88,7 @@ private fun buildEffectiveResponse(
             .add(
                 HTTPHeader(
                     HTTPHeaderConstants.contentLength,
-                    original.entity.buffer.limit().toString(10)
+                    original.entity.buffer.size.toString(10)
                 )
             )
         val effectiveResponse = original.copy(
@@ -113,4 +110,14 @@ private fun buildEffectiveResponse(
     }
 
     return original
+}
+
+fun Buffer.put(byte: Byte): Buffer {
+    this.writeByte(byte)
+    return this
+}
+
+fun Buffer.put(byteArray: ByteArray): Buffer {
+    this.write(byteArray)
+    return this
 }

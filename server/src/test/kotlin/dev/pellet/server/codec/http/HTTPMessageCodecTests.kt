@@ -2,17 +2,13 @@ package dev.pellet.server.codec.http
 
 import dev.pellet.server.MockPelletServerClient
 import dev.pellet.server.PelletServerClient
-import dev.pellet.server.buffer.AlwaysAllocatingPelletBufferPool
-import dev.pellet.server.buffer.PelletBuffer
-import dev.pellet.server.buffer.PelletBufferPooling
 import dev.pellet.server.codec.MockHTTPCodecHandler
+import kotlinx.io.Buffer
 import java.net.URI
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 class HTTPMessageCodecTests {
-
-    private val pool = AlwaysAllocatingPelletBufferPool(4096)
     private lateinit var mockClient: PelletServerClient
     private lateinit var mockHandler: MockHTTPCodecHandler
     private lateinit var sut: HTTPMessageCodec
@@ -21,12 +17,12 @@ class HTTPMessageCodecTests {
     fun setUp() {
         mockClient = MockPelletServerClient()
         mockHandler = MockHTTPCodecHandler()
-        sut = HTTPMessageCodec(pool, mockHandler::handle)
+        sut = HTTPMessageCodec(mockHandler::handle)
     }
 
     @Test
     fun `most basic message sense check`() {
-        val buffer = pool.bufferOf("GET / HTTP/1.1\r\n\r\n")
+        val buffer = bufferOf("GET / HTTP/1.1\r\n\r\n")
 
         sut.consume(buffer, mockClient)
 
@@ -39,8 +35,8 @@ class HTTPMessageCodecTests {
 
     @Test
     fun `two simple messages`() {
-        val bufferOne = pool.bufferOf("GET /one HTTP/1.1\r\n\r\n")
-        val bufferTwo = pool.bufferOf("GET /two HTTP/1.1\r\n\r\n")
+        val bufferOne = bufferOf("GET /one HTTP/1.1\r\n\r\n")
+        val bufferTwo = bufferOf("GET /two HTTP/1.1\r\n\r\n")
 
         sut.consume(bufferOne, mockClient)
         sut.consume(bufferTwo, mockClient)
@@ -62,7 +58,7 @@ class HTTPMessageCodecTests {
             "Hello: World\r\n" +
             "Content-Length: 4\r\n\r\n" +
             "1234"
-        val buffer = pool.bufferOf(complexMessage)
+        val buffer = bufferOf(complexMessage)
 
         sut.consume(buffer, mockClient)
 
@@ -73,7 +69,7 @@ class HTTPMessageCodecTests {
                 .add("Hello", "World")
                 .add("Content-Length", "4"),
             entity = HTTPEntity.Content(
-                pool.bufferOf("1234")
+                bufferOf("1234")
             )
         )
         mockHandler.assertMessageEquals(expected)
@@ -90,7 +86,7 @@ class HTTPMessageCodecTests {
             "234\r\n" + // data: "234"
             "0\r\n" + // end size chunk
             "\r\n"
-        val buffer = pool.bufferOf(complexMessage)
+        val buffer = bufferOf(complexMessage)
 
         sut.consume(buffer, mockClient)
 
@@ -101,7 +97,7 @@ class HTTPMessageCodecTests {
                 .add("Hello", "World")
                 .add("Transfer-Encoding", "chunked"),
             entity = HTTPEntity.Content(
-                pool.bufferOf("1234")
+                bufferOf("1234")
             )
         )
         mockHandler.assertMessageEquals(expected)
@@ -129,8 +125,8 @@ class HTTPMessageCodecTests {
             "d!\r\n" + // data: "d!"
             "0\r\n" + // end size chunk
             "\r\n"
-        val bufferOne = pool.bufferOf(complexMessageOne)
-        val bufferTwo = pool.bufferOf(complexMessageTwo)
+        val bufferOne = bufferOf(complexMessageOne)
+        val bufferTwo = bufferOf(complexMessageTwo)
 
         sut.consume(bufferOne, mockClient)
         sut.consume(bufferTwo, mockClient)
@@ -142,7 +138,7 @@ class HTTPMessageCodecTests {
                 .add("Hello", "World")
                 .add("Transfer-Encoding", "chunked"),
             entity = HTTPEntity.Content(
-                pool.bufferOf("Hello ")
+                bufferOf("Hello ")
             )
         )
         val expectedTwo = buildMessage(
@@ -152,17 +148,16 @@ class HTTPMessageCodecTests {
                 .add("Hello", "World")
                 .add("Transfer-Encoding", "chunked"),
             entity = HTTPEntity.Content(
-                pool.bufferOf("World!")
+                bufferOf("World!")
             )
         )
         mockHandler.assertMessagesEqual(expectedOne, expectedTwo)
     }
 
-    private fun PelletBufferPooling.bufferOf(string: String): PelletBuffer {
+    private fun bufferOf(string: String): Buffer {
+        val buffer = Buffer()
         val bytes = string.toByteArray(charset = Charsets.UTF_8)
-        val buffer = this.provide()
-        buffer.byteBuffer.put(bytes)
-        buffer.byteBuffer.flip()
+        buffer.write(bytes)
         return buffer
     }
 

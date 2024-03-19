@@ -22,8 +22,8 @@ object PelletBuilder {
         return builder.build()
     }
 
-    suspend fun httpRouter(
-        lambda: suspend (@PelletBuilderDslTag PelletRoutePathBuilder).() -> Unit
+    fun httpRouter(
+        lambda: (@PelletBuilderDslTag PelletRoutePathBuilder).() -> Unit
     ): PelletHTTPRouter {
         val router = PelletHTTPRouter()
         val routePath = PelletHTTPRoutePath(listOf())
@@ -173,26 +173,26 @@ class PelletRoutePathBuilder(
         route(HTTPMethod.Delete, path, handler)
     }
 
-    suspend fun path(
+    fun path(
         newPathPrefix: PelletHTTPRoutePath,
-        lambda: suspend (@PelletBuilderDslTag PelletRoutePathBuilder).() -> Unit
+        lambda: (@PelletBuilderDslTag PelletRoutePathBuilder).() -> Unit
     ) {
         val fullPathPrefix = newPathPrefix.prefixedWith(routePathPrefix)
         val builder = PelletRoutePathBuilder(router, fullPathPrefix)
         lambda(builder)
     }
 
-    suspend fun path(
+    fun path(
         path: String,
-        lambda: suspend (@PelletBuilderDslTag PelletRoutePathBuilder).() -> Unit
+        lambda: (@PelletBuilderDslTag PelletRoutePathBuilder).() -> Unit
     ) {
         val parsedPathPrefix = PelletHTTPRoutePath.parse(path)
         path(parsedPathPrefix, lambda)
     }
 
-    suspend fun path(
+    fun path(
         descriptor: RouteVariableDescriptor<*>,
-        lambda: suspend (@PelletBuilderDslTag PelletRoutePathBuilder).() -> Unit
+        lambda: (@PelletBuilderDslTag PelletRoutePathBuilder).() -> Unit
     ) {
         val variablePathPrefix = PelletHTTPRoutePath.Builder()
             .addVariable(descriptor)
@@ -205,7 +205,7 @@ class PelletRoutePathBuilder(
 class PelletServerBuilder {
 
     var logRequests: Boolean = true
-    var maxWorkerCount: Int? = null
+    var connectionConcurrencyLimit: Int? = null
     val connectors = mutableListOf<PelletConnector>()
 
     fun httpConnector(lambda: (@PelletBuilderDslTag HTTPConnectorBuilder).() -> Unit) {
@@ -215,9 +215,9 @@ class PelletServerBuilder {
     }
 
     internal fun build(): PelletServer {
-        val maxWorkerCount = this.maxWorkerCount
-            ?: Runtime.getRuntime().availableProcessors()
-        return PelletServer(logRequests, maxWorkerCount, connectors)
+        val concurrencyLimit = this.connectionConcurrencyLimit
+            ?: PelletServer.DEFAULT_MAX_CONNECTION_CONCURRENCY
+        return PelletServer(logRequests, concurrencyLimit, connectors)
     }
 }
 

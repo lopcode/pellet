@@ -8,8 +8,8 @@ import dev.pellet.server.codec.http.HTTPEntity
 import dev.pellet.server.codec.http.HTTPRequestMessage
 import dev.pellet.server.codec.http.matches
 import dev.pellet.server.codec.http.query.QueryParameters
-import dev.pellet.server.extension.ByteBufferInputStream
 import dev.pellet.server.routing.RouteVariableDescriptor
+import kotlinx.io.asInputStream
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 
@@ -119,7 +119,7 @@ data class PelletHTTPRouteContext(
             )
         }
         return runCatching {
-            ByteBufferInputStream(rawEntity.buffer.byteBuffer).use {
+            rawEntity.buffer.asInputStream().use {
                 decoder.decodeFromStream(it)
             }
         }

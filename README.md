@@ -5,15 +5,16 @@
 
 Pellet is an opinionated Kotlin-first web framework that helps you write fast, concise, and correct backend services 🚀.
 
-Pellet handles a huge number of requests per second, has a tiny dependency graph (`kotlin-stdlib`, `kotlinx-coroutines`, and `slf4j-api`), and offers approximately one way of doing things. The framework's conciseness is achieved through functional composition, instead of traditional JVM approaches involving annotations and reflection.
+Pellet handles a huge number of requests per second, has a tiny dependency graph (`kotlin-stdlib`, `kotlinx.io`, and `slf4j-api`), and offers approximately one way of doing things.
+The framework's conciseness is achieved through functional composition, instead of traditional JVM approaches involving annotations and reflection.
 
-I write about building Pellet in a series on my blog: https://www.carrot.blog/series/pellet/
+I write about building Pellet in a series on my blog: https://www.lopcode.com/series/pellet/
 
 ## Releases
 
-This project is still in the prototyping phase - give the latest version a try! Let me know what you think, and what to focus on next, in [GitHub Discussions](https://github.com/CarrotCodes/Pellet/discussions/categories/feedback) 💬.
+This project is still in the prototyping phase - give the latest version a try! Let me know what you think, and what to focus on next, in [GitHub Discussions](https://github.com/lopcode/Pellet/discussions/categories/feedback) 💬.
 
-Note that the prototype is built with the latest JVM LTS release at the time of writing - Java 17.
+Note that the prototype is built with the latest JVM LTS release at the time of writing - Java 21.
 
 Gradle (Kotlin):
 ```
@@ -22,7 +23,7 @@ repositories {
 }
 
 dependencies {
-    implementation(platform("dev.pellet:pellet-bom:0.0.15"))
+    implementation(platform("dev.pellet:pellet-bom:0.0.16"))
     implementation("dev.pellet:pellet-server")
     implementation("dev.pellet:pellet-logging")
 }
@@ -50,7 +51,7 @@ fun main() = runBlocking {
             }
         }
     }
-    pellet.start().join()
+    pellet.start()
 }
 ```
 
@@ -97,7 +98,7 @@ data class ResponseBody(
     val message: String
 )
 
-private suspend fun handleResponseBody(
+private fun handleResponseBody(
     context: PelletHTTPRouteContext
 ): HTTPRouteResponse {
     val responseBody = ResponseBody(message = "hello, world 🌎")
@@ -206,7 +207,7 @@ data class ResponseBody(
     val message: String
 )
 
-private suspend fun handleEchoRequest(
+private fun handleEchoRequest(
     context: PelletHTTPRouteContext
 ): HTTPRouteResponse {
     val requestBody = context.decodeRequestBody<RequestBody>(Json).getOrElse {
@@ -243,7 +244,7 @@ You can find more examples in the `demo` subproject.
 This work is, unless otherwise stated, licensed under the Apache License, Version 2.0.
 
 ```
-Copyright 2021-2023 CarrotCodes
+Copyright 2021-2024 lopcode
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
