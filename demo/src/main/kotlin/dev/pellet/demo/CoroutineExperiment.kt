@@ -18,6 +18,7 @@ object CoroutineExperiment
 fun main() = runBlocking {
     val counter = AtomicInteger(0)
     val runtimeSeconds = 30
+    measure("loom thread per count", ::launchLoomPerCount, runtimeSeconds, counter)
     measure("coroutine per count", ::launchPerCount, runtimeSeconds, counter)
     measure("coroutine per processor", ::launchPerProcessor, runtimeSeconds, counter)
 }
@@ -46,6 +47,22 @@ private fun CoroutineScope.launchPerCount(
             break
         }
         launch(Dispatchers.IO) {
+            counter.incrementAndGet()
+        }
+    }
+}
+
+private fun launchLoomPerCount(
+    runtimeSeconds: Int,
+    counter: AtomicInteger
+) {
+    val start = Instant.now()
+    while (true) {
+        val duration = Duration.between(start, Instant.now())
+        if (duration.toSeconds() > runtimeSeconds) {
+            break
+        }
+        Thread.ofVirtual().start {
             counter.incrementAndGet()
         }
     }

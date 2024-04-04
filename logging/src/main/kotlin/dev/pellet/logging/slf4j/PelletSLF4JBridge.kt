@@ -1,13 +1,17 @@
-package dev.pellet.logging
+package dev.pellet.logging.slf4j
 
+import dev.pellet.logging.PelletLogLevel
+import dev.pellet.logging.pelletLogger
+import org.slf4j.Marker
+import org.slf4j.event.Level
 import org.slf4j.helpers.FormattingTuple
-import org.slf4j.helpers.MarkerIgnoringBase
+import org.slf4j.helpers.LegacyAbstractLogger
 import org.slf4j.helpers.MessageFormatter
 
 public class PelletSLF4JBridge(
     name: String,
     private val level: PelletLogLevel
-) : MarkerIgnoringBase() {
+) : LegacyAbstractLogger() {
 
     private val backingLogger = pelletLogger(name)
 
@@ -238,5 +242,31 @@ public class PelletSLF4JBridge(
         } else {
             backingLogger.log(level) { message ?: "" }
         }
+    }
+
+    override fun getFullyQualifiedCallerName(): String? {
+        return null
+    }
+
+    override fun handleNormalizedLoggingCall(
+        level: Level?,
+        marker: Marker?,
+        msg: String?,
+        args: Array<out Any>?,
+        throwable: Throwable?
+    ) {
+        val messageLevel = when (level) {
+            Level.ERROR -> PelletLogLevel.ERROR
+            Level.WARN -> PelletLogLevel.WARN
+            Level.INFO -> PelletLogLevel.INFO
+            Level.DEBUG -> PelletLogLevel.DEBUG
+            Level.TRACE -> PelletLogLevel.TRACE
+            else -> return
+        }
+        if (this.level.value < messageLevel.value) {
+            return
+        }
+        val formattingTuple = MessageFormatter.arrayFormat(msg, args, throwable)
+        logFormattingTuple(messageLevel, formattingTuple)
     }
 }
