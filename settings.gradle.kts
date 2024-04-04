@@ -15,7 +15,7 @@ dependencyResolutionManagement {
             version("kotlin", "1.9.22")
             version("ktor", "2.3.1")
             version("jooby", "2.16.1")
-            library("junit-jupiter", "org.junit.jupiter:junit-jupiter:5.9.3")
+            library("junit-jupiter", "org.junit.jupiter:junit-jupiter:5.10.2")
             library("kotlin-serialization", "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
             library("slf4j-api", "org.slf4j:slf4j-api:1.7.32")
             library("kotlinx-io", "org.jetbrains.kotlinx:kotlinx-io-core:0.3.2")
