@@ -1,11 +1,10 @@
-package org.slf4j.impl
+package dev.pellet.logging.slf4j
 
 import dev.pellet.logging.PelletLogging
-import dev.pellet.logging.PelletSLF4JBridge
 import org.slf4j.ILoggerFactory
 import org.slf4j.Logger
 
-class PelletLoggerFactory : ILoggerFactory {
+class PelletSLF4JLoggerFactory : ILoggerFactory {
 
     override fun getLogger(name: String): Logger {
         return PelletSLF4JBridge(name, PelletLogging.level)
