@@ -20,7 +20,7 @@ dependencyResolutionManagement {
             library("slf4j-api", "org.slf4j:slf4j-api:1.7.32")
             library("kotlinx-io", "org.jetbrains.kotlinx:kotlinx-io-core:0.3.2")
             library("kotlinx-coroutines", "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
-            library("okhttp-bom", "com.squareup.okhttp3:okhttp-bom:4.9.3")
+            library("okhttp-bom", "com.squareup.okhttp3:okhttp-bom:4.12.0")
             library("ktor-bom", "io.ktor", "ktor-bom").versionRef("ktor")
             library("ktor-core", "io.ktor", "ktor-server-core").versionRef("ktor")
             library("ktor-netty", "io.ktor", "ktor-server-netty").versionRef("ktor")
