@@ -1,10 +1,16 @@
 name: Build & Check
-on: [push, pull_request]
+on:
+  pull_request:
+  push:
+    branches:
+      - main
 jobs:
   check:
     name: Run Gradle checks
     runs-on: ubuntu-22.04
     timeout-minutes: 10
+    permissions:
+      pull-requests: write
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -13,12 +19,12 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 22
 
       - name: Set up Gradle
         uses: gradle/gradle-build-action@v2
         with:
-          gradle-version: 8.1.1
+          gradle-version: 8.7
 
       - name: Run checks
         run: ./gradlew clean check --rerun-tasks
@@ -27,10 +33,24 @@ jobs:
         run: ./gradlew jacocoTestReport
 
       - name: Archive code coverage results
+        if: github.ref != 'refs/heads/main'
         uses: actions/upload-artifact@v3
         with:
           name: code-coverage-report
           path: server/build/reports/jacoco/test/html/
+
+      - name: Jacoco Report to PR
+        id: jacoco
+        if: github.ref != 'refs/heads/main'
+        uses: madrapps/jacoco-report@v1.6.1
+        with:
+          paths: |
+            ${{ github.workspace }}/**/build/reports/jacoco/**/jacocoTestReport.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          update-comment: true
+          title: '# :clipboard: Coverage Report'
+          pass-emoji: ':green_circle:'
+          fail-emoji: ':red_circle:'
 
   integration-tests:
     name: Run integration tests
@@ -44,12 +64,12 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 22
 
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
         with:
-          gradle-version: 8.1.1
+          gradle-version: 8.7
 
       - name: Run checks
         run: ./gradlew clean integrationTest --rerun-tasks -Dbenchmark.requests.total=10000
