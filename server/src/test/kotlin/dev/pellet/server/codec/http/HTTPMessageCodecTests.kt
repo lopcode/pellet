@@ -7,6 +7,7 @@ import kotlinx.io.Buffer
 import java.net.URI
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertTrue
 
 class HTTPMessageCodecTests {
     private lateinit var mockClient: PelletServerClient
@@ -21,11 +22,22 @@ class HTTPMessageCodecTests {
     }
 
     @Test
+    fun `basic invalid message sense check`() {
+        val buffer = bufferOf("invalid input")
+
+        sut.consume(buffer, mockClient)
+
+        assertTrue(buffer.exhausted())
+        mockHandler.assertMessagesEqual()
+    }
+
+    @Test
     fun `most basic message sense check`() {
         val buffer = bufferOf("GET / HTTP/1.1\r\n\r\n")
 
         sut.consume(buffer, mockClient)
 
+        assertTrue(buffer.exhausted())
         val expected = buildMessage(
             method = HTTPMethod.Get,
             resourceUri = "/"
@@ -41,6 +53,8 @@ class HTTPMessageCodecTests {
         sut.consume(bufferOne, mockClient)
         sut.consume(bufferTwo, mockClient)
 
+        assertTrue(bufferOne.exhausted())
+        assertTrue(bufferTwo.exhausted())
         val expectedOne = buildMessage(
             method = HTTPMethod.Get,
             resourceUri = "/one"
@@ -62,6 +76,7 @@ class HTTPMessageCodecTests {
 
         sut.consume(buffer, mockClient)
 
+        assertTrue(buffer.exhausted())
         val expected = buildMessage(
             method = HTTPMethod.Post,
             resourceUri = "/post",
@@ -90,6 +105,7 @@ class HTTPMessageCodecTests {
 
         sut.consume(buffer, mockClient)
 
+        assertTrue(buffer.exhausted())
         val expected = buildMessage(
             method = HTTPMethod.Post,
             resourceUri = "/post",
@@ -131,6 +147,8 @@ class HTTPMessageCodecTests {
         sut.consume(bufferOne, mockClient)
         sut.consume(bufferTwo, mockClient)
 
+        assertTrue(bufferOne.exhausted())
+        assertTrue(bufferTwo.exhausted())
         val expectedOne = buildMessage(
             method = HTTPMethod.Post,
             resourceUri = "/hello",
