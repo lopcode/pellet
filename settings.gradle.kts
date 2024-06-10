@@ -18,7 +18,7 @@ dependencyResolutionManagement {
             library("junit-jupiter", "org.junit.jupiter:junit-jupiter:5.10.2")
             library("kotlin-serialization", "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
             library("slf4j-api", "org.slf4j:slf4j-api:2.0.12")
-            library("kotlinx-io", "org.jetbrains.kotlinx:kotlinx-io-core:0.3.2")
+            library("kotlinx-io", "org.jetbrains.kotlinx:kotlinx-io-core:0.4.0")
             library("kotlinx-coroutines", "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
             library("okhttp-bom", "com.squareup.okhttp3:okhttp-bom:4.12.0")
             library("ktor-bom", "io.ktor", "ktor-bom").versionRef("ktor")
